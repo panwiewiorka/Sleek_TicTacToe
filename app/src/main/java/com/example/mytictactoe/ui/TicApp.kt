@@ -51,7 +51,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                                 .aspectRatio(1f)
                                 .padding(1.dp)
                                 .weight(1f)
-                                .background(Color(0xFF666666))
+                                .background(Color(0xFF555555))
                                 .clickable(
                                     enabled = ticUiState.gameArray[i][j].isClickable,
                                     onClick = {

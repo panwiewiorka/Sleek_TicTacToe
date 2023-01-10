@@ -8,11 +8,10 @@ import kotlinx.coroutines.flow.update
 
 class TicViewModel: ViewModel() {
 
-            // Game UI state
     private val _uiState = MutableStateFlow(TicUiState())
-            // Backing property to avoid state updates from other classes
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
-            // The asStateFlow() makes this mutable state flow a read-only state flow
+
+    private var cellsLeft: Int = 0
 
     fun setSize(sliderPosition: Float){
         // округление в правильную сторону (а не обязательно в меньшую)
@@ -35,6 +34,7 @@ class TicViewModel: ViewModel() {
                 currentMove = "X",
             )
         }
+        cellsLeft = size * size
     }
 
     fun showMenuDialog(yesNo: Boolean){
@@ -50,7 +50,9 @@ class TicViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(gameArray = gameArray)
         }
+        cellsLeft--
         checkWin(i, j, currentMove)
+        checkDraw()
         changeTurn(currentMove)
     }
 
@@ -154,6 +156,19 @@ class TicViewModel: ViewModel() {
         if (currentRow >= winRow) {
             for(a in n until n+currentRow) {
                 uiState.value.gameArray[a][m-a+n].textColor = 0xFF00DD41
+            }
+            _uiState.update { currentState ->
+                currentState.copy(lastClick = true)
+            }
+        }
+    }
+
+    private fun checkDraw(){
+        if(cellsLeft == 0){
+            for(i in uiState.value.gameArray.indices) {
+                for(j in uiState.value.gameArray.indices) {
+                    uiState.value.gameArray[i][j].textColor = 0xFF440512
+                }
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClick = true)
