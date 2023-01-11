@@ -25,11 +25,14 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
         AlertDialog(
             onDismissRequest = {  },
             buttons = {
-                SizeSlider (
+                MainMenu (
                     { ticViewModel.setSize(it) },
+                    { ticViewModel.setWinRow(it) },
                     { ticViewModel.resetGame(ticUiState.gameArray.size)},
                     { ticViewModel.showMenuDialog(false) },
-                    size = ticUiState.gameArray.size
+                    size = ticUiState.gameArray.size,
+                    winRow = ticUiState.winRow,
+                    lastClick = ticUiState.lastClick
                 )
             },
             shape = RoundedCornerShape(15.dp),
@@ -84,33 +87,87 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
 
 @Composable
-fun SizeSlider(
+fun MainMenu(
                setSize: (Float) -> Unit,
+               setWinRow: (Float) -> Unit,
                resetGame: (Int) -> Unit,
                showMenuDialog: (Boolean) -> Unit,
-               size: Int
+               size: Int,
+               winRow: Int,
+               lastClick: Boolean
 ){
-    var sliderPosition by remember { mutableStateOf(3f) }
-    sliderPosition = size.toFloat()
+    var sizeSliderPosition by remember { mutableStateOf(3f) }
+    //sizeSliderPosition = size.toFloat()
+    var winRowSliderPosition by remember { mutableStateOf(3f) }
+    //winRowSliderPosition = winRow.toFloat()
+    var winRowUpperLimit by remember { mutableStateOf(3f) }
+    var winRowSteps by remember { mutableStateOf(0) }
+    if(lastClick == true){
+        sizeSliderPosition = size.toFloat()
+        winRowSliderPosition = winRow.toFloat()
+        winRowUpperLimit = sizeSliderPosition
+        winRowSteps = if(sizeSliderPosition > 3){
+            sizeSliderPosition.toInt() - 4
+        } else 0
+        resetGame(size)
+    }
     Column(
         modifier = Modifier.padding(25.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Grid size: $size", fontSize = 28.sp)
+        Text(text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
         Slider(
-            value = sliderPosition,
+            value = sizeSliderPosition,
             onValueChange = {
-                sliderPosition = it
+                sizeSliderPosition = it
                 setSize(it) },
             valueRange = 3f..8f,
             steps = 4,
+            onValueChangeFinished = {
+                if(winRowSliderPosition > sizeSliderPosition){winRowSliderPosition = sizeSliderPosition }
+                winRowSteps = if(sizeSliderPosition > 3){
+                    sizeSliderPosition.toInt() - 4
+                } else 0
+                winRowUpperLimit = sizeSliderPosition
+                                    },
             modifier = Modifier
                 .width(220.dp)
-                .padding(15.dp)
+                .padding(top = 4.dp, bottom = 20.dp)
         )
-        Button(onClick = {resetGame(size); showMenuDialog(false)}) {
-            Text(text = "Start")
+        Text(text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
+        Box(modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
+        ){
+            Slider(
+                enabled = false,
+                value = winRowSliderPosition,
+                onValueChange = {},
+                valueRange = 3f..8f,
+                steps = 4,
+                modifier = Modifier.width(220.dp)
+            )
+            Slider(
+                value = winRowSliderPosition,
+                onValueChange = {
+                    winRowSliderPosition = it
+                    setWinRow(it) },
+                valueRange = 3f..winRowUpperLimit,
+                steps = winRowSteps,
+                onValueChangeFinished = {
+                    if(winRowUpperLimit == 4f){
+                        winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f
+                    }
+                },
+                modifier = Modifier
+                    .width((40 * (winRowSteps + 1) + 20).dp)
+            )
+        }
+        Button(onClick = {
+            resetGame(size)
+            showMenuDialog(false)
+            setWinRow(winRowSliderPosition)
+        }) {
+            Text(text = "START", fontSize = 20.sp)
         }
     }
 }

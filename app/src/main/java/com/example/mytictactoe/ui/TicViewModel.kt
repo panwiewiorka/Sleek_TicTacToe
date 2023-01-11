@@ -13,15 +13,31 @@ class TicViewModel: ViewModel() {
 
     private var cellsLeft: Int = 0
 
-    fun setSize(sliderPosition: Float){
+    fun setSize(slider: Float){
         // округление в правильную сторону (а не обязательно в меньшую)
-        val size = if((sliderPosition - sliderPosition.toInt()) > 0.5)
-        {sliderPosition.toInt() + 1}
-        else sliderPosition.toInt()
+        val size = if((slider - slider.toInt()) > 0.5)
+        {slider.toInt() + 1}
+        else slider.toInt()
 
         // if - чтобы рекомпозить только при смене целых значений
         if(size != uiState.value.gameArray.size){
             resetGame(size)
+        }
+    }
+
+    fun setWinRow(slider: Float){
+        // округление в правильную сторону (а не обязательно в меньшую)
+        val winRow = if((slider - slider.toInt()) > 0.5)
+        {slider.toInt() + 1}
+        else slider.toInt()
+
+        // if - чтобы рекомпозить только при смене целых значений
+        if(winRow != uiState.value.winRow){
+            _uiState.update { currentState ->
+                currentState.copy(
+                    winRow = slider.toInt()
+                )
+            }
         }
     }
 
@@ -64,8 +80,6 @@ class TicViewModel: ViewModel() {
     }
 
     private fun checkWin(i: Int, j: Int, currentMove: String){
-        val winRow = 3
-
         // VERTICAL CHECK
         var n = i
         var currentRow = 1
@@ -79,7 +93,7 @@ class TicViewModel: ViewModel() {
             currentRow++
             n--
         }
-        if (currentRow >= winRow) {
+        if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
                 uiState.value.gameArray[a][j].textColor = 0xFF00DD41
             }
@@ -101,7 +115,7 @@ class TicViewModel: ViewModel() {
             currentRow++
             m--
         }
-        if (currentRow >= winRow) {
+        if (currentRow >= uiState.value.winRow) {
             for(a in m until m+currentRow) {
                 uiState.value.gameArray[i][a].textColor = 0xFF00DD41
             }
@@ -127,7 +141,7 @@ class TicViewModel: ViewModel() {
             n--
             m--
         }
-        if (currentRow >= winRow) {
+        if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
                 uiState.value.gameArray[a][a-n+m].textColor = 0xFF00DD41
             }
@@ -153,7 +167,7 @@ class TicViewModel: ViewModel() {
             n--
             m++
         }
-        if (currentRow >= winRow) {
+        if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
                 uiState.value.gameArray[a][m-a+n].textColor = 0xFF00DD41
             }
