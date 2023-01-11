@@ -1,6 +1,10 @@
 package com.example.mytictactoe.ui
 
 import androidx.lifecycle.ViewModel
+import com.example.mytictactoe.ui.theme.CurrentMove
+import com.example.mytictactoe.ui.theme.Draw
+import com.example.mytictactoe.ui.theme.StandartCell
+import com.example.mytictactoe.ui.theme.Win
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +16,8 @@ class TicViewModel: ViewModel() {
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
     private var cellsLeft: Int = 0
+    private var oldI: Int = 0
+    private var oldJ: Int = 0
 
     fun setSize(slider: Float){
         // округление в правильную сторону (а не обязательно в меньшую)
@@ -42,7 +48,7 @@ class TicViewModel: ViewModel() {
     }
 
     fun resetGame(size: Int){
-        val gameArray = Array(size) { Array(size) { Field(isClickable = true, fieldText = " ", textColor = 0xFFFFFFFF) } }
+        val gameArray = Array(size) { Array(size) { Field(isClickable = true, fieldText = " ", textColor = StandartCell) } }
         _uiState.update { currentState ->
             currentState.copy(
                 lastClick = false,
@@ -61,11 +67,19 @@ class TicViewModel: ViewModel() {
 
     fun makeMove(i: Int, j: Int, currentMove: String){
         val gameArray = uiState.value.gameArray
+        if(cellsLeft == (gameArray.size * gameArray.size)){
+            oldI = 0
+            oldJ = 0
+        }
+        gameArray[oldI][oldJ].textColor = StandartCell
+        gameArray[i][j].textColor = CurrentMove
         gameArray[i][j].fieldText = currentMove
         gameArray[i][j].isClickable = false
         _uiState.update { currentState ->
             currentState.copy(gameArray = gameArray)
         }
+        oldI = i
+        oldJ = j
         cellsLeft--
         checkWin(i, j, currentMove)
         checkDraw()
@@ -95,7 +109,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][j].textColor = 0xFF00DD41
+                uiState.value.gameArray[a][j].textColor = Win
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClick = true)
@@ -117,7 +131,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in m until m+currentRow) {
-                uiState.value.gameArray[i][a].textColor = 0xFF00DD41
+                uiState.value.gameArray[i][a].textColor = Win
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClick = true)
@@ -143,7 +157,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][a-n+m].textColor = 0xFF00DD41
+                uiState.value.gameArray[a][a-n+m].textColor = Win
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClick = true)
@@ -169,7 +183,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][m-a+n].textColor = 0xFF00DD41
+                uiState.value.gameArray[a][m-a+n].textColor = Win
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClick = true)
@@ -181,7 +195,7 @@ class TicViewModel: ViewModel() {
         if(cellsLeft == 0){
             for(i in uiState.value.gameArray.indices) {
                 for(j in uiState.value.gameArray.indices) {
-                    uiState.value.gameArray[i][j].textColor = 0xFF440512
+                    uiState.value.gameArray[i][j].textColor = Draw
                 }
             }
             _uiState.update { currentState ->

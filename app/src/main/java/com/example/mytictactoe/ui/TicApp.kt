@@ -8,11 +8,11 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mytictactoe.ui.theme.CellBackground
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 
 
@@ -54,7 +54,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                                 .aspectRatio(1f)
                                 .padding(1.dp)
                                 .weight(1f)
-                                .background(Color(0xFF555555))
+                                .background(CellBackground)
                                 .clickable(
                                     enabled = ticUiState.gameArray[i][j].isClickable,
                                     onClick = {
@@ -69,7 +69,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         ) {
                             Text(
                                 text = ticUiState.gameArray[i][j].fieldText,
-                                color = Color(ticUiState.gameArray[i][j].textColor),
+                                color = ticUiState.gameArray[i][j].textColor,
                                 fontSize = 36.sp
                             )
                         }
@@ -102,7 +102,7 @@ fun MainMenu(
     //winRowSliderPosition = winRow.toFloat()
     var winRowUpperLimit by remember { mutableStateOf(3f) }
     var winRowSteps by remember { mutableStateOf(0) }
-    if(lastClick == true){
+    if(lastClick){
         sizeSliderPosition = size.toFloat()
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
@@ -147,6 +147,7 @@ fun MainMenu(
                 modifier = Modifier.width(220.dp)
             )
             Slider(
+                enabled = winRowUpperLimit != 3f,
                 value = winRowSliderPosition,
                 onValueChange = {
                     winRowSliderPosition = it
