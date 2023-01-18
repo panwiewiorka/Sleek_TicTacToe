@@ -19,6 +19,26 @@ class TicViewModel: ViewModel() {
     private var oldI: Int = 0
     private var oldJ: Int = 0
 
+    fun setSettingsFromMemory(yesNo: Boolean){
+        _uiState.update { currentState ->
+            currentState.copy(memorySettings = yesNo)
+        }
+    }
+
+    fun checkOrientationChange(yesNo: Boolean){
+        if(yesNo != uiState.value.landscapeMode) setSettingsFromMemory(true)
+        _uiState.update { currentState ->
+            currentState.copy(landscapeMode = yesNo)
+        }
+    }
+
+    fun showMenuDialog(yesNo: Boolean){
+        setSettingsFromMemory(yesNo)
+        _uiState.update { currentState ->
+            currentState.copy(menuDialog = yesNo)
+        }
+    }
+
     fun setSize(slider: Float){
         // округление в правильную сторону (а не обязательно в меньшую)
         val size = if((slider - slider.toInt()) > 0.5)
@@ -51,18 +71,12 @@ class TicViewModel: ViewModel() {
         val gameArray = Array(size) { Array(size) { Field(isClickable = true, fieldText = " ", textColor = StandartCell) } }
         _uiState.update { currentState ->
             currentState.copy(
-                lastClick = false,
+                lastClickScreen = false,
                 gameArray = gameArray,
                 currentMove = "X",
             )
         }
         cellsLeft = size * size
-    }
-
-    fun showMenuDialog(yesNo: Boolean){
-        _uiState.update { currentState ->
-            currentState.copy(menuDialog = yesNo)
-        }
     }
 
     fun makeMove(i: Int, j: Int, currentMove: String){
@@ -112,7 +126,7 @@ class TicViewModel: ViewModel() {
                 uiState.value.gameArray[a][j].textColor = Win
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClick = true)
+                currentState.copy(lastClickScreen = true)
             }
         }
 
@@ -134,7 +148,7 @@ class TicViewModel: ViewModel() {
                 uiState.value.gameArray[i][a].textColor = Win
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClick = true)
+                currentState.copy(lastClickScreen = true)
             }
         }
 
@@ -160,7 +174,7 @@ class TicViewModel: ViewModel() {
                 uiState.value.gameArray[a][a-n+m].textColor = Win
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClick = true)
+                currentState.copy(lastClickScreen = true)
             }
         }
 
@@ -186,7 +200,7 @@ class TicViewModel: ViewModel() {
                 uiState.value.gameArray[a][m-a+n].textColor = Win
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClick = true)
+                currentState.copy(lastClickScreen = true)
             }
         }
     }
@@ -199,7 +213,7 @@ class TicViewModel: ViewModel() {
                 }
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClick = true)
+                currentState.copy(lastClickScreen = true)
             }
         }
     }

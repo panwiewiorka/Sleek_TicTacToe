@@ -10,8 +10,10 @@ data class Field(
 )
 
 data class TicUiState(
+    val landscapeMode: Boolean = false,
+    val memorySettings: Boolean = true,
     val menuDialog: Boolean = true,
-    val lastClick: Boolean = false,
+    val lastClickScreen: Boolean = false,
     val winRow: Int = 3,
     val currentMove: String = "X",
     val gameArray: Array<Array<Field>> = Array(3) { i -> Array(3) { j -> Field(isClickable = true, fieldText = " ", textColor = StandartCell) } }

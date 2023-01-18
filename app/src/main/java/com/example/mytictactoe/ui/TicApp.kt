@@ -32,7 +32,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     { ticViewModel.showMenuDialog(false) },
                     size = ticUiState.gameArray.size,
                     winRow = ticUiState.winRow,
-                    lastClick = ticUiState.lastClick
+                    memorySettings = ticUiState.memorySettings,
+                    { ticViewModel.setSettingsFromMemory(false) }
                 )
             },
             shape = RoundedCornerShape(15.dp),
@@ -41,47 +42,50 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
     //----------------------------MAIN
 
-    Box(modifier = Modifier
-        .aspectRatio(1f)
-    ) {
-        Column {
-            for (i in ticUiState.gameArray.indices) {
-                Row {
-                    for (j in ticUiState.gameArray[i].indices) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .padding(1.dp)
-                                .weight(1f)
-                                .background(CellBackground)
-                                .clickable(
-                                    enabled = ticUiState.gameArray[i][j].isClickable,
-                                    onClick = {
-                                        ticViewModel.makeMove(
-                                            i = i,
-                                            j = j,
-                                            currentMove = ticUiState.currentMove
-                                            // TODO: ^ избавиться от этого параметра? (брать в функции makeMove напрямую из uiState)
-                                        )
-                                    }
+    BoxWithConstraints(contentAlignment = Alignment.Center) {
+        ticViewModel.checkOrientationChange(maxWidth > maxHeight)
+        Box(modifier = Modifier
+            .aspectRatio(1f, ticUiState.landscapeMode)
+        ) {
+            Column {
+                for (i in ticUiState.gameArray.indices) {
+                    Row {
+                        for (j in ticUiState.gameArray[i].indices) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier
+                                    .aspectRatio(1f)
+                                    .padding(1.dp)
+                                    .weight(1f)
+                                    .background(CellBackground)
+                                    .clickable(
+                                        enabled = ticUiState.gameArray[i][j].isClickable,
+                                        onClick = {
+                                            ticViewModel.makeMove(
+                                                i = i,
+                                                j = j,
+                                                currentMove = ticUiState.currentMove
+                                                // TODO: ^ избавиться от этого параметра? (брать в функции makeMove напрямую из uiState)
+                                            )
+                                        }
+                                    )
+                            ) {
+                                Text(
+                                    text = ticUiState.gameArray[i][j].fieldText,
+                                    color = ticUiState.gameArray[i][j].textColor,
+                                    fontSize = 36.sp
                                 )
-                        ) {
-                            Text(
-                                text = ticUiState.gameArray[i][j].fieldText,
-                                color = ticUiState.gameArray[i][j].textColor,
-                                fontSize = 36.sp
-                            )
+                            }
                         }
                     }
                 }
             }
         }
-    }
-    if (ticUiState.lastClick) {
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+        if (ticUiState.lastClickScreen) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+        }
     }
 }
 
@@ -94,22 +98,27 @@ fun MainMenu(
                showMenuDialog: (Boolean) -> Unit,
                size: Int,
                winRow: Int,
-               lastClick: Boolean
+               memorySettings: Boolean,
+               setSettingsFromMemory: (Boolean) -> Unit
 ){
     var sizeSliderPosition by remember { mutableStateOf(3f) }
-    //sizeSliderPosition = size.toFloat()
     var winRowSliderPosition by remember { mutableStateOf(3f) }
-    //winRowSliderPosition = winRow.toFloat()
     var winRowUpperLimit by remember { mutableStateOf(3f) }
     var winRowSteps by remember { mutableStateOf(0) }
-    if(lastClick){
+    // ^^ by remember { mutableStateOf() }   made for sliders local operation. Settings are saved in UiState.
+    if(memorySettings){
         sizeSliderPosition = size.toFloat()
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
-        winRowSteps = if(sizeSliderPosition > 3){
-            sizeSliderPosition.toInt() - 4
-        } else 0
+        if(sizeSliderPosition > 3){
+            winRowSteps = sizeSliderPosition.toInt() - 4
+            // TODO winRow slider visibility
+        } else {
+            winRowSteps = 0
+            // TODO winRow slider visibility
+        }
         resetGame(size)
+        setSettingsFromMemory(false)
     }
     Column(
         modifier = Modifier.padding(25.dp),
@@ -126,9 +135,13 @@ fun MainMenu(
             steps = 4,
             onValueChangeFinished = {
                 if(winRowSliderPosition > sizeSliderPosition){winRowSliderPosition = sizeSliderPosition }
-                winRowSteps = if(sizeSliderPosition > 3){
-                    sizeSliderPosition.toInt() - 4
-                } else 0
+                if(sizeSliderPosition > 3){
+                    winRowSteps = sizeSliderPosition.toInt() - 4
+                    // TODO winRow slider visibility
+                } else {
+                    winRowSteps = 0
+                    // TODO winRow slider visibility
+                }
                 winRowUpperLimit = sizeSliderPosition
                                     },
             modifier = Modifier
