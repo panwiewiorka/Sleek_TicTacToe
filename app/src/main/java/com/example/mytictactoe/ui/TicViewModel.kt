@@ -19,21 +19,21 @@ class TicViewModel: ViewModel() {
     private var oldI: Int = 0
     private var oldJ: Int = 0
 
-    fun setSettingsFromMemory(yesNo: Boolean){
+    fun loadSettingsFromUiState(yesNo: Boolean){
         _uiState.update { currentState ->
             currentState.copy(memorySettings = yesNo)
         }
     }
 
-    fun checkOrientationChange(yesNo: Boolean){
-        if(yesNo != uiState.value.landscapeMode) setSettingsFromMemory(true)
+    fun rememberSettingsDuringOrientationChange(yesNo: Boolean){
+        if(yesNo != uiState.value.landscapeMode) loadSettingsFromUiState(true)
         _uiState.update { currentState ->
             currentState.copy(landscapeMode = yesNo)
         }
     }
 
     fun showMenuDialog(yesNo: Boolean){
-        setSettingsFromMemory(yesNo)
+        loadSettingsFromUiState(yesNo)
         _uiState.update { currentState ->
             currentState.copy(menuDialog = yesNo)
         }
@@ -61,7 +61,25 @@ class TicViewModel: ViewModel() {
         if(winRow != uiState.value.winRow){
             _uiState.update { currentState ->
                 currentState.copy(
-                    winRow = slider.toInt()
+                    winRow = winRow
+                )
+            }
+        }
+    }
+
+    fun cancelWinRowChange(loadWinRow: Boolean){
+        if(!loadWinRow) {
+            _uiState.update { a ->
+                a.copy(
+                    menuButtonIsClicked = true,
+                    cancelledWinRow = uiState.value.winRow
+                )
+            }
+        } else {
+            _uiState.update { a ->
+                a.copy(
+                    winRow = uiState.value.cancelledWinRow,
+                    menuButtonIsClicked = false
                 )
             }
         }
@@ -97,7 +115,7 @@ class TicViewModel: ViewModel() {
         cellsLeft--
         checkWin(i, j, currentMove)
         checkDraw()
-        changeTurn(currentMove)
+        if(!uiState.value.lastClickScreen) changeTurn(currentMove)
     }
 
     private fun changeTurn(turn: String){
