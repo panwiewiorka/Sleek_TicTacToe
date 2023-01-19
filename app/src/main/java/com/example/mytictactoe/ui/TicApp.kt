@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -22,7 +23,7 @@ import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
     val ticUiState by ticViewModel.uiState.collectAsState()
 
-    //----------------------------POPUP MENU
+    //----------------------------POPUP MENU DIALOG
     if (ticUiState.menuDialog){
         AlertDialog(
             onDismissRequest = {
@@ -45,7 +46,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
         )
     }
 
-    //-------------------------------MAIN
+    //-------------------------------MAIN SCREEN
     
     BoxWithConstraints(contentAlignment = Alignment.Center) {
         ticViewModel.rememberSettingsDuringOrientationChange(maxWidth > maxHeight)
@@ -56,12 +57,21 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 .padding(top = 10.dp)
                 .weight(1f),
                 horizontalArrangement = Arrangement.SpaceAround) {
-                Box(contentAlignment = Alignment.Center){
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) {ticViewModel.cancelMove()}){
                     Icon(painterResource(R.drawable.arrow_back_ios_48px),
-                        "Cancel move",
+                        null,
                         modifier = Modifier
                             .size(32.dp)
+                            .alpha(0.3f)
                             .padding(start = 10.dp))
+                    if(ticUiState.cancelMoveButtonEnabled){
+                        Icon(painterResource(R.drawable.arrow_back_ios_48px),
+                            "Cancel move",
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(start = 10.dp))
+                    }
                 }
                 Box(contentAlignment = Alignment.Center){
                     val currentMove = if(ticUiState.currentMove == "X")
@@ -105,14 +115,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                                         .background(CellBackground)
                                         .clickable(
                                             enabled = ticUiState.gameArray[i][j].isClickable,
-                                            onClick = {
-                                                ticViewModel.makeMove(
-                                                    i = i,
-                                                    j = j,
-                                                    currentMove = ticUiState.currentMove
-                                                    // TODO: ^ избавиться от этого параметра? (брать в функции makeMove напрямую из uiState)
-                                                )
-                                            }
+                                            onClick = { ticViewModel.makeMove(i = i, j = j) }
                                         )
                                 ) {
                                     Text(

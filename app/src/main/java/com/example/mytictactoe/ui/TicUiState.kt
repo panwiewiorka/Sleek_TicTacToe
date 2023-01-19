@@ -18,5 +18,6 @@ data class TicUiState(
     val cancelledWinRow: Int = 3,
     val menuButtonIsClicked: Boolean = false,
     val currentMove: String = "X",
+    val cancelMoveButtonEnabled: Boolean = false,
     val gameArray: Array<Array<Field>> = Array(3) { i -> Array(3) { j -> Field(isClickable = true, fieldText = " ", textColor = StandartCell) } }
 )

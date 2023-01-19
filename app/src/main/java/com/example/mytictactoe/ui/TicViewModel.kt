@@ -97,7 +97,7 @@ class TicViewModel: ViewModel() {
         cellsLeft = size * size
     }
 
-    fun makeMove(i: Int, j: Int, currentMove: String){
+    fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
         if(cellsLeft == (gameArray.size * gameArray.size)){
             oldI = 0
@@ -105,17 +105,34 @@ class TicViewModel: ViewModel() {
         }
         gameArray[oldI][oldJ].textColor = StandartCell
         gameArray[i][j].textColor = CurrentMove
-        gameArray[i][j].fieldText = currentMove
+        gameArray[i][j].fieldText = uiState.value.currentMove
         gameArray[i][j].isClickable = false
         _uiState.update { currentState ->
-            currentState.copy(gameArray = gameArray)
+            currentState.copy(
+                gameArray = gameArray,
+                cancelMoveButtonEnabled = true
+            )
         }
         oldI = i
         oldJ = j
         cellsLeft--
-        checkWin(i, j, currentMove)
+        checkWin(i, j, uiState.value.currentMove)
         checkDraw()
-        if(!uiState.value.lastClickScreen) changeTurn(currentMove)
+        if(!uiState.value.lastClickScreen) changeTurn(uiState.value.currentMove)
+    }
+
+    fun cancelMove(){
+        val gameArray = uiState.value.gameArray
+        gameArray[oldI][oldJ].fieldText = ""
+        gameArray[oldI][oldJ].isClickable = true
+        _uiState.update { currentState ->
+            currentState.copy(
+                gameArray = gameArray,
+                cancelMoveButtonEnabled = false
+            )
+        }
+        cellsLeft++
+        changeTurn(uiState.value.currentMove)
     }
 
     private fun changeTurn(turn: String){
