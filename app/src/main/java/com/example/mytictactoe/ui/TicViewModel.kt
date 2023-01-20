@@ -15,11 +15,13 @@ class TicViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(TicUiState())
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
-    private var cellsLeft: Int = 0
     private var iOneMoveBefore: Int = 0
     private var jOneMoveBefore: Int = 0
     private var iTwoMovesBefore: Int = 0
     private var jTwoMovesBefore: Int = 0
+    private var cellsLeft: Int = 0
+    var drawCellsOdd = 0
+    var drawCellsEven = 0
 
     fun loadSettingsFromUiState(yesNo: Boolean){
         _uiState.update { currentState ->
@@ -122,6 +124,7 @@ class TicViewModel: ViewModel() {
         jOneMoveBefore = j
         cellsLeft--
         checkWin(i, j, uiState.value.currentMove)
+        checkEarlyDraw()
         checkDraw()
         if(!uiState.value.lastClickScreen) changeTurn(uiState.value.currentMove)
     }
@@ -246,6 +249,100 @@ class TicViewModel: ViewModel() {
                 currentState.copy(lastClickScreen = true)
             }
         }
+    }
+
+    private fun checkEarlyDraw(){
+        drawCellsOdd = 0
+        drawCellsEven = 0
+        for (k in uiState.value.gameArray.indices){
+            for (l in uiState.value.gameArray[k].indices){
+                if(uiState.value.gameArray[k][l].fieldText == " "){
+                    drawCellsOdd += earlyDrawAlgorithm(k, l)
+                    changeTurn(uiState.value.currentMove)
+                    drawCellsEven += earlyDrawAlgorithm(k, l)
+                    changeTurn(uiState.value.currentMove)
+                }
+            }
+        }
+        if((drawCellsOdd == cellsLeft) && (drawCellsEven == cellsLeft)){
+            for(i in uiState.value.gameArray.indices) {
+                for(j in uiState.value.gameArray.indices) {
+                    uiState.value.gameArray[i][j].textColor = Draw
+                }
+            }
+            _uiState.update { currentState ->
+                currentState.copy(lastClickScreen = true)
+            }
+        }
+    }
+
+    private fun earlyDrawAlgorithm(k: Int, l: Int): Int{
+        // VERTICAL CHECK
+        var n = k
+        var currentVerticalRow = 1
+
+        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][l].fieldText != uiState.value.currentMove)){
+            currentVerticalRow++
+            n++
+        }
+        n = k
+        while((n > 0) && (uiState.value.gameArray[n - 1][l].fieldText != uiState.value.currentMove)){
+            currentVerticalRow++
+            n--
+        }
+
+        // HORIZONTAL CHECK
+        var m = l
+        var currentHorizontalRow = 1
+
+        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[k][m + 1].fieldText != uiState.value.currentMove)){
+            currentHorizontalRow++
+            m++
+        }
+        m = l
+        while((m > 0) && (uiState.value.gameArray[k][m - 1].fieldText != uiState.value.currentMove)){
+            currentHorizontalRow++
+            m--
+        }
+
+        // MAIN DIAGONAL CHECK
+        n = k
+        m = l
+        var currentMainDiagonalRow = 1
+
+        while((n + 1 < uiState.value.gameArray.size) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][m + 1].fieldText != uiState.value.currentMove)){
+            currentMainDiagonalRow++
+            n++
+            m++
+        }
+        n = k
+        m = l
+        while((n > 0) && (m > 0) && (uiState.value.gameArray[n - 1][m - 1].fieldText != uiState.value.currentMove)){
+            currentMainDiagonalRow++
+            n--
+            m--
+        }
+
+        // OTHER DIAGONAL CHECK
+        n = k
+        m = l
+        var currentOtherDiagonalRow = 1
+
+        while((n + 1 < uiState.value.gameArray.size) && (m > 0) && (uiState.value.gameArray[n + 1][m - 1].fieldText != uiState.value.currentMove)){
+            currentOtherDiagonalRow++
+            n++
+            m--
+        }
+        n = k
+        m = l
+        while((n > 0) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n - 1][m + 1].fieldText != uiState.value.currentMove)){
+            currentOtherDiagonalRow++
+            n--
+            m++
+        }
+
+        // --------TOTAL CHECK
+        return if ((currentVerticalRow < uiState.value.winRow) && (currentHorizontalRow < uiState.value.winRow) && (currentMainDiagonalRow < uiState.value.winRow) && (currentOtherDiagonalRow < uiState.value.winRow)) 1 else 0
     }
 
     private fun checkDraw(){
