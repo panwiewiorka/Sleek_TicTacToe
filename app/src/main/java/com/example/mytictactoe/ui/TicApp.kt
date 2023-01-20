@@ -59,14 +59,14 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 horizontalArrangement = Arrangement.SpaceAround) {
                 Box(contentAlignment = Alignment.Center,
                     modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) {ticViewModel.cancelMove()}){
-                    Icon(painterResource(R.drawable.arrow_back_ios_48px),
+                    Icon(painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
                         null,
                         modifier = Modifier
                             .size(32.dp)
                             .alpha(0.3f)
                             .padding(start = 10.dp))
                     if(ticUiState.cancelMoveButtonEnabled){
-                        Icon(painterResource(R.drawable.arrow_back_ios_48px),
+                        Icon(painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
                             "Cancel move",
                             modifier = Modifier
                                 .size(32.dp)
@@ -189,13 +189,7 @@ fun MainMenu(
                     winRowSliderPosition = sizeSliderPosition
                     setWinRow(winRowSliderPosition)
                 }
-                if(sizeSliderPosition > 3){
-                    winRowSteps = sizeSliderPosition.toInt() - 4
-                    // TODO winRow slider visibility
-                } else {
-                    winRowSteps = 0
-                    // TODO winRow slider visibility
-                }
+                winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
                 winRowUpperLimit = sizeSliderPosition
                                     },
             modifier = Modifier
@@ -205,7 +199,7 @@ fun MainMenu(
         Text(text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
         Box(modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
         ){
-            Slider(
+            Slider( // background grey slider
                 enabled = false,
                 value = winRowSliderPosition,
                 onValueChange = {},
@@ -213,23 +207,25 @@ fun MainMenu(
                 steps = 4,
                 modifier = Modifier.width(220.dp)
             )
-            Slider(
-                enabled = winRowUpperLimit != 3f,
-                value = winRowSliderPosition,
-                onValueChange = {
-                    winRowSliderPosition = it
-                    setWinRow(it) },
-                valueRange = 3f..winRowUpperLimit,
-                steps = winRowSteps,
-                onValueChangeFinished = {
-                    // When winRowUpperLimit == 4f, steps == 0, so we have to manually implement changes to be discrete.
-                    if(winRowUpperLimit == 4f){
-                        winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f
-                    }
-                },
-                modifier = Modifier
-                    .width((40 * (winRowSteps + 1) + 20).dp)
-            )
+            if(winRowUpperLimit != 3f){
+                Slider(
+                    //enabled = winRowUpperLimit != 3f,
+                    value = winRowSliderPosition,
+                    onValueChange = {
+                        winRowSliderPosition = it
+                        setWinRow(it) },
+                    valueRange = 3f..winRowUpperLimit,
+                    steps = winRowSteps,
+                    onValueChangeFinished = {
+                        // When winRowUpperLimit == 4f, steps = 0, so we have to manually implement changes to be discrete.
+                        if(winRowUpperLimit == 4f){
+                            winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f
+                        }
+                    },
+                    modifier = Modifier
+                        .width((40 * (winRowSteps + 1) + 20).dp)
+                )
+            }
         }
         Button(onClick = {
             resetGame(size)

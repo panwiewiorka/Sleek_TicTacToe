@@ -16,8 +16,10 @@ class TicViewModel: ViewModel() {
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
     private var cellsLeft: Int = 0
-    private var oldI: Int = 0
-    private var oldJ: Int = 0
+    private var iOneMoveBefore: Int = 0
+    private var jOneMoveBefore: Int = 0
+    private var iTwoMovesBefore: Int = 0
+    private var jTwoMovesBefore: Int = 0
 
     fun loadSettingsFromUiState(yesNo: Boolean){
         _uiState.update { currentState ->
@@ -99,11 +101,14 @@ class TicViewModel: ViewModel() {
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
+        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         if(cellsLeft == (gameArray.size * gameArray.size)){
-            oldI = 0
-            oldJ = 0
+            iOneMoveBefore = 0
+            jOneMoveBefore = 0
         }
-        gameArray[oldI][oldJ].textColor = StandartCell
+        iTwoMovesBefore = iOneMoveBefore
+        jTwoMovesBefore = jOneMoveBefore
+        gameArray[iOneMoveBefore][jOneMoveBefore].textColor = StandartCell
         gameArray[i][j].textColor = CurrentMove
         gameArray[i][j].fieldText = uiState.value.currentMove
         gameArray[i][j].isClickable = false
@@ -113,8 +118,8 @@ class TicViewModel: ViewModel() {
                 cancelMoveButtonEnabled = true
             )
         }
-        oldI = i
-        oldJ = j
+        iOneMoveBefore = i
+        jOneMoveBefore = j
         cellsLeft--
         checkWin(i, j, uiState.value.currentMove)
         checkDraw()
@@ -123,8 +128,11 @@ class TicViewModel: ViewModel() {
 
     fun cancelMove(){
         val gameArray = uiState.value.gameArray
-        gameArray[oldI][oldJ].fieldText = ""
-        gameArray[oldI][oldJ].isClickable = true
+        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = ""
+        gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
+        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CurrentMove
+        iOneMoveBefore = iTwoMovesBefore
+        jOneMoveBefore = jTwoMovesBefore
         _uiState.update { currentState ->
             currentState.copy(
                 gameArray = gameArray,
