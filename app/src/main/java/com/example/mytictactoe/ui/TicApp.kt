@@ -130,6 +130,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 }
             }
             Spacer(Modifier.weight(2f))
+            Text(text = (ticViewModel.drawCellsOdd).toString())
+            Text(text = (ticViewModel.drawCellsEven).toString())
         }
         //----------------------------------LAST SCREEN (win / draw)
         if (ticUiState.lastClickScreen) {
