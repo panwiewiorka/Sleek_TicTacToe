@@ -20,15 +20,15 @@ class TicViewModel: ViewModel() {
     private var iTwoMovesBefore: Int = 0
     private var jTwoMovesBefore: Int = 0
     private var cellsLeft: Int = 0
-    var drawCellsOdd = 0
-    var drawCellsEven = 0
+    private var drawCellsOdd = 0
+    private var drawCellsEven = 0
 
     fun loadSettingsFromUiState(yesNo: Boolean){
         _uiState.update { currentState ->
             currentState.copy(memorySettings = yesNo)
         }
     }
-
+// TODO check whether ^ & v can be merged into one function
     fun rememberSettingsDuringOrientationChange(yesNo: Boolean){
         if(yesNo != uiState.value.landscapeMode) loadSettingsFromUiState(true)
         _uiState.update { currentState ->
@@ -74,17 +74,11 @@ class TicViewModel: ViewModel() {
     fun cancelWinRowChange(loadWinRow: Boolean){
         if(!loadWinRow) {
             _uiState.update { a ->
-                a.copy(
-                    menuButtonIsClicked = true,
-                    cancelledWinRow = uiState.value.winRow
-                )
+                a.copy(savedWinRow = uiState.value.winRow)
             }
-        } else {
+        } else if(cellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size)) {
             _uiState.update { a ->
-                a.copy(
-                    winRow = uiState.value.cancelledWinRow,
-                    menuButtonIsClicked = false
-                )
+                a.copy(winRow = uiState.value.savedWinRow)
             }
         }
     }
@@ -103,11 +97,13 @@ class TicViewModel: ViewModel() {
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
-        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         if(cellsLeft == (gameArray.size * gameArray.size)){
             iOneMoveBefore = 0
             jOneMoveBefore = 0
+            iTwoMovesBefore = 0
+            jTwoMovesBefore = 0
         }
+        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
         gameArray[iOneMoveBefore][jOneMoveBefore].textColor = StandartCell
@@ -124,9 +120,10 @@ class TicViewModel: ViewModel() {
         jOneMoveBefore = j
         cellsLeft--
         checkWin(i, j, uiState.value.currentMove)
-        checkEarlyDraw()
-        checkDraw()
-        if(!uiState.value.lastClickScreen) changeTurn(uiState.value.currentMove)
+        if(!uiState.value.lastClickScreen) {
+            checkDraw()
+            changeTurn(uiState.value.currentMove)
+        }
     }
 
     fun cancelMove(){
@@ -146,15 +143,23 @@ class TicViewModel: ViewModel() {
         changeTurn(uiState.value.currentMove)
     }
 
-    private fun changeTurn(turn: String){
-        val updatedTurn = if(turn == "X") "0" else "X"
-        _uiState.update { currentState ->
-            currentState.copy(currentMove = updatedTurn)
+    private fun changeTurn(currentMove: String){
+        val updatedTurn = if(currentMove == "X") "0" else "X"
+        _uiState.update { a ->
+            a.copy(currentMove = updatedTurn)
         }
     }
 
     private fun checkWin(i: Int, j: Int, currentMove: String){
-        // VERTICAL CHECK
+        /* Algorithm is similar to drawAlgorithm:
+        from currently clicked cell we are looking forward and backward, in all directions,
+        to find same (X or 0) cells, adding those founded to compare to winRow.
+
+        Then (contrary to drawAlgorithm algorithm)
+        we have to make sure that AT LEAST ONE of the four directions can win (HAVE enough X or 0 in a row)
+         */
+
+        // VERTICAL CHECK forward
         var n = i
         var currentRow = 1
 
@@ -162,11 +167,13 @@ class TicViewModel: ViewModel() {
             currentRow++
             n++
         }
+        // then backward
         n = i
         while((n > 0) && (uiState.value.gameArray[n - 1][j].fieldText == currentMove)){
             currentRow++
             n--
         }
+        // if enough X or 0 in a row -> WIN
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
                 uiState.value.gameArray[a][j].textColor = Win
@@ -251,20 +258,22 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    private fun checkEarlyDraw(){
+    private fun checkDraw(){
         drawCellsOdd = 0
         drawCellsEven = 0
-        for (k in uiState.value.gameArray.indices){
-            for (l in uiState.value.gameArray[k].indices){
-                if(uiState.value.gameArray[k][l].fieldText == " "){
-                    drawCellsOdd += earlyDrawAlgorithm(k, l)
+        // checking whether any of the free remaining cells can possibly win.
+        for (i in uiState.value.gameArray.indices){
+            for (j in uiState.value.gameArray[i].indices){
+                if(uiState.value.gameArray[i][j].fieldText == " "){
+                    drawCellsOdd += drawAlgorithm(i, j)   // adding 1 to drawCellsOdd if X (or O) cannot win in this cell
                     changeTurn(uiState.value.currentMove)
-                    drawCellsEven += earlyDrawAlgorithm(k, l)
+                    drawCellsEven += drawAlgorithm(i, j)   // adding 1 to drawCellsOdd if 0 (or X) cannot win in this cell
                     changeTurn(uiState.value.currentMove)
                 }
             }
         }
-        if((drawCellsOdd == cellsLeft) && (drawCellsEven == cellsLeft)){
+        //  (if no possible winning cells left -> DRAW)
+        if(((drawCellsOdd == cellsLeft) && (drawCellsEven == cellsLeft)) || ((cellsLeft == 1) && (drawCellsOdd == 1)) || (cellsLeft == 0)){
             for(i in uiState.value.gameArray.indices) {
                 for(j in uiState.value.gameArray.indices) {
                     uiState.value.gameArray[i][j].textColor = Draw
@@ -276,38 +285,48 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    private fun earlyDrawAlgorithm(k: Int, l: Int): Int{
-        // VERTICAL CHECK
-        var n = k
+    private fun drawAlgorithm(i: Int, j: Int): Int{
+        /* Algorithm is similar to checkWin:
+        from currently clicked cell we are looking forward and backward, in all directions,
+        to find same (X or 0) OR EMPTY cells, adding those founded to compare to winRow.
+
+        Then (contrary to checkWin algorithm)
+        we have to make sure that NONE of the four directions can win
+        (DON'T have enough X or EMPTY / 0 or EMPTY in a row)
+         */
+
+        // VERTICAL CHECK forward
+        var n = i
         var currentVerticalRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][l].fieldText != uiState.value.currentMove)){
+        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][j].fieldText != uiState.value.currentMove)){
             currentVerticalRow++
             n++
         }
-        n = k
-        while((n > 0) && (uiState.value.gameArray[n - 1][l].fieldText != uiState.value.currentMove)){
+        // then backward
+        n = i
+        while((n > 0) && (uiState.value.gameArray[n - 1][j].fieldText != uiState.value.currentMove)){
             currentVerticalRow++
             n--
         }
 
         // HORIZONTAL CHECK
-        var m = l
+        var m = j
         var currentHorizontalRow = 1
 
-        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[k][m + 1].fieldText != uiState.value.currentMove)){
+        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[i][m + 1].fieldText != uiState.value.currentMove)){
             currentHorizontalRow++
             m++
         }
-        m = l
-        while((m > 0) && (uiState.value.gameArray[k][m - 1].fieldText != uiState.value.currentMove)){
+        m = j
+        while((m > 0) && (uiState.value.gameArray[i][m - 1].fieldText != uiState.value.currentMove)){
             currentHorizontalRow++
             m--
         }
 
         // MAIN DIAGONAL CHECK
-        n = k
-        m = l
+        n = i
+        m = j
         var currentMainDiagonalRow = 1
 
         while((n + 1 < uiState.value.gameArray.size) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][m + 1].fieldText != uiState.value.currentMove)){
@@ -315,8 +334,8 @@ class TicViewModel: ViewModel() {
             n++
             m++
         }
-        n = k
-        m = l
+        n = i
+        m = j
         while((n > 0) && (m > 0) && (uiState.value.gameArray[n - 1][m - 1].fieldText != uiState.value.currentMove)){
             currentMainDiagonalRow++
             n--
@@ -324,8 +343,8 @@ class TicViewModel: ViewModel() {
         }
 
         // OTHER DIAGONAL CHECK
-        n = k
-        m = l
+        n = i
+        m = j
         var currentOtherDiagonalRow = 1
 
         while((n + 1 < uiState.value.gameArray.size) && (m > 0) && (uiState.value.gameArray[n + 1][m - 1].fieldText != uiState.value.currentMove)){
@@ -333,8 +352,8 @@ class TicViewModel: ViewModel() {
             n++
             m--
         }
-        n = k
-        m = l
+        n = i
+        m = j
         while((n > 0) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n - 1][m + 1].fieldText != uiState.value.currentMove)){
             currentOtherDiagonalRow++
             n--
@@ -343,19 +362,6 @@ class TicViewModel: ViewModel() {
 
         // --------TOTAL CHECK
         return if ((currentVerticalRow < uiState.value.winRow) && (currentHorizontalRow < uiState.value.winRow) && (currentMainDiagonalRow < uiState.value.winRow) && (currentOtherDiagonalRow < uiState.value.winRow)) 1 else 0
-    }
-
-    private fun checkDraw(){
-        if(cellsLeft == 0){
-            for(i in uiState.value.gameArray.indices) {
-                for(j in uiState.value.gameArray.indices) {
-                    uiState.value.gameArray[i][j].textColor = Draw
-                }
-            }
-            _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
-            }
-        }
     }
 
 }

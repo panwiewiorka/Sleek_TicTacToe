@@ -28,8 +28,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
         AlertDialog(
             onDismissRequest = {
                 ticViewModel.showMenuDialog(false)
-                if(ticUiState.menuButtonIsClicked)
-                    ticViewModel.cancelWinRowChange(true) },
+                ticViewModel.cancelWinRowChange(true) },
             buttons = {
                 MainMenu (
                     { ticViewModel.setSize(it) },
@@ -130,8 +129,6 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 }
             }
             Spacer(Modifier.weight(2f))
-            Text(text = (ticViewModel.drawCellsOdd).toString())
-            Text(text = (ticViewModel.drawCellsEven).toString())
         }
         //----------------------------------LAST SCREEN (win / draw)
         if (ticUiState.lastClickScreen) {
@@ -163,14 +160,7 @@ fun MainMenu(
         sizeSliderPosition = size.toFloat()
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
-        if(sizeSliderPosition > 3){
-            winRowSteps = sizeSliderPosition.toInt() - 4
-            // TODO winRow slider visibility
-        } else {
-            winRowSteps = 0
-            // TODO winRow slider visibility
-        }
-        //resetGame(size)
+        winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
         setSettingsFromMemory(false)
     }
     Column(
