@@ -45,61 +45,14 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
         )
     }
 
-    //-------------------------------MAIN SCREEN
-    
+    //-------------------------------------MAIN SCREEN
     BoxWithConstraints(contentAlignment = Alignment.Center) {
         ticViewModel.rememberSettingsDuringOrientationChange(maxWidth > maxHeight)
-        Column() {
-            //------------------------TOP BAR with ICONS
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp)
-                .weight(1f),
-                horizontalArrangement = Arrangement.SpaceAround) {
-                Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) {ticViewModel.cancelMove()}){
-                    Icon(painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
-                        null,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .alpha(0.3f)
-                            .padding(start = 10.dp))
-                    if(ticUiState.cancelMoveButtonEnabled){
-                        Icon(painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
-                            "Cancel move",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .padding(start = 10.dp))
-                    }
-                }
-                Box(contentAlignment = Alignment.Center){
-                    val currentMove = if(ticUiState.currentMove == "X")
-                        painterResource(R.drawable.close_48px)
-                    else painterResource(R.drawable.fiber_manual_record_48px)
-                    Icon(currentMove,
-                        null,
-                        modifier = Modifier
-                            .size(32.dp)
-                    )
-                }
-                Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable {
-                        ticViewModel.cancelWinRowChange(false)
-                        ticViewModel.showMenuDialog(!ticUiState.menuDialog)
-                    }){
-                    Icon(painterResource(R.drawable.crop_square_48px),
-                        "Menu",
-                        modifier = Modifier.size(30.dp)
-                    )
-                    Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
-                }
-            }
-            Spacer(modifier = Modifier.weight(1f))
-
-            //-----------------------------GAME FIELD----------------------------
+        if(!ticUiState.landscapeMode) {
+            //-------------------------PORTRAIT ORIENTATION
+            //-----------------------------GAME FIELD
             Box(
-                modifier = Modifier
-                    .aspectRatio(1f, ticUiState.landscapeMode)
+                modifier = Modifier.aspectRatio(1f, false)
             ) {
                 Column {
                     for (i in ticUiState.gameArray.indices) {
@@ -128,13 +81,162 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     }
                 }
             }
-            Spacer(Modifier.weight(2f))
-        }
-        //----------------------------------LAST SCREEN (win / draw)
-        if (ticUiState.lastClickScreen) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+            //------------------------LAST SCREEN (win / draw)
+            if (ticUiState.lastClickScreen) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+            }
+            //------------------------TOP BAR with ICONS
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                //---------------------------button  <
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) {
+                        ticViewModel.cancelMove()
+                    }) {
+                    Icon(
+                        painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
+                        null,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .alpha(0.3f)
+                            .padding(start = 10.dp)
+                    )
+                    if (ticUiState.cancelMoveButtonEnabled) {
+                        Icon(
+                            painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
+                            "Cancel move",
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(start = 10.dp)
+                        )
+                    }
+                }
+                //---------------------------button  XO
+                Box(contentAlignment = Alignment.Center) {
+                    val currentMove = if (ticUiState.currentMove == "X")
+                        painterResource(R.drawable.close_48px)
+                    else painterResource(R.drawable.fiber_manual_record_48px)
+                    Icon(
+                        currentMove,
+                        null,
+                        modifier = Modifier
+                            .size(32.dp)
+                    )
+                }
+                //---------------------------button  []
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier.clickable {
+                        ticViewModel.cancelWinRowChange(false)
+                        ticViewModel.showMenuDialog(!ticUiState.menuDialog)
+                    }) {
+                    Icon(
+                        painterResource(R.drawable.crop_square_48px),
+                        "Menu",
+                        modifier = Modifier.size(30.dp)
+                    )
+                    Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
+                }
+            }
+        } else {
+            //________________________LANDSCAPE ORIENTATION
+            //_____________________________GAME FIELD
+            Box(
+                modifier = Modifier.aspectRatio(1f, true)
+            ) {
+                Column {
+                    for (i in ticUiState.gameArray.indices) {
+                        Row {
+                            for (j in ticUiState.gameArray[i].indices) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .aspectRatio(1f)
+                                        .padding(1.dp)
+                                        .weight(1f)
+                                        .background(CellBackground)
+                                        .clickable(
+                                            enabled = ticUiState.gameArray[i][j].isClickable,
+                                            onClick = { ticViewModel.makeMove(i = i, j = j) }
+                                        )
+                                ) {
+                                    Text(
+                                        text = ticUiState.gameArray[i][j].fieldText,
+                                        color = ticUiState.gameArray[i][j].textColor,
+                                        fontSize = 36.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            //________________________LAST SCREEN (win / draw)
+            if (ticUiState.lastClickScreen) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+            }
+            //________________________LEFT BAR with ICONS
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .align(Alignment.CenterStart)
+                    .padding(start = 10.dp, bottom = 22.dp),
+                verticalArrangement = Arrangement.SpaceAround
+            ) {
+                //___________________________button  []
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier.clickable {
+                        ticViewModel.cancelWinRowChange(false)
+                        ticViewModel.showMenuDialog(!ticUiState.menuDialog)
+                    }) {
+                    Icon(
+                        painterResource(R.drawable.crop_square_48px),
+                        "Menu",
+                        modifier = Modifier.size(30.dp)
+                    )
+                    Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
+                }
+                //___________________________button  XO
+                Box(contentAlignment = Alignment.Center) {
+                    val currentMove = if (ticUiState.currentMove == "X")
+                        painterResource(R.drawable.close_48px)
+                    else painterResource(R.drawable.fiber_manual_record_48px)
+                    Icon(
+                        currentMove,
+                        null,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                //___________________________button  <
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) { ticViewModel.cancelMove() }) {
+                    Icon(
+                        painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
+                        null,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .alpha(0.3f)
+                            .padding(start = 10.dp)
+                    )
+                    if (ticUiState.cancelMoveButtonEnabled) {
+                        Icon(
+                            painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
+                            "Cancel move",
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(start = 10.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

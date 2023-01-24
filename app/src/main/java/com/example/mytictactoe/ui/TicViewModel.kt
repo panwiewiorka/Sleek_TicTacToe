@@ -20,15 +20,13 @@ class TicViewModel: ViewModel() {
     private var iTwoMovesBefore: Int = 0
     private var jTwoMovesBefore: Int = 0
     private var cellsLeft: Int = 0
-    private var drawCellsOdd = 0
-    private var drawCellsEven = 0
 
     fun loadSettingsFromUiState(yesNo: Boolean){
         _uiState.update { currentState ->
             currentState.copy(memorySettings = yesNo)
         }
     }
-// TODO check whether ^ & v can be merged into one function
+
     fun rememberSettingsDuringOrientationChange(yesNo: Boolean){
         if(yesNo != uiState.value.landscapeMode) loadSettingsFromUiState(true)
         _uiState.update { currentState ->
@@ -44,29 +42,27 @@ class TicViewModel: ViewModel() {
     }
 
     fun setSize(slider: Float){
-        // округление в правильную сторону (а не обязательно в меньшую)
+        // rounding to the nearest int, not necessarily to the lowest
         val size = if((slider - slider.toInt()) > 0.5)
         {slider.toInt() + 1}
         else slider.toInt()
 
-        // if - чтобы рекомпозить только при смене целых значений
+        // recomposing only on discrete value changes
         if(size != uiState.value.gameArray.size){
             resetGame(size)
         }
     }
 
     fun setWinRow(slider: Float){
-        // округление в правильную сторону (а не обязательно в меньшую)
+        // rounding to the nearest int, not necessarily to the lowest
         val winRow = if((slider - slider.toInt()) > 0.5)
         {slider.toInt() + 1}
         else slider.toInt()
 
-        // if - чтобы рекомпозить только при смене целых значений
+        // recomposing only on discrete value changes
         if(winRow != uiState.value.winRow){
-            _uiState.update { currentState ->
-                currentState.copy(
-                    winRow = winRow
-                )
+            _uiState.update { a ->
+                a.copy(winRow = winRow)
             }
         }
     }
@@ -88,6 +84,7 @@ class TicViewModel: ViewModel() {
         _uiState.update { currentState ->
             currentState.copy(
                 lastClickScreen = false,
+                cancelMoveButtonEnabled = false,
                 gameArray = gameArray,
                 currentMove = "X",
             )
@@ -122,12 +119,24 @@ class TicViewModel: ViewModel() {
         checkWin(i, j, uiState.value.currentMove)
         if(!uiState.value.lastClickScreen) {
             checkDraw()
-            changeTurn(uiState.value.currentMove)
+            if(!uiState.value.lastClickScreen) {
+                changeTurn(uiState.value.currentMove)
+            }
         }
     }
 
     fun cancelMove(){
         val gameArray = uiState.value.gameArray
+        if(uiState.value.lastClickScreen){
+            for(i in gameArray.indices) {
+                for(j in gameArray.indices) {
+                    gameArray[i][j].textColor = StandartCell
+                }
+            }
+            _uiState.update { currentState ->
+                currentState.copy(lastClickScreen = false)
+            }
+        } else changeTurn(uiState.value.currentMove)
         gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = ""
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CurrentMove
@@ -140,7 +149,6 @@ class TicViewModel: ViewModel() {
             )
         }
         cellsLeft++
-        changeTurn(uiState.value.currentMove)
     }
 
     private fun changeTurn(currentMove: String){
@@ -259,8 +267,8 @@ class TicViewModel: ViewModel() {
     }
 
     private fun checkDraw(){
-        drawCellsOdd = 0
-        drawCellsEven = 0
+        var drawCellsOdd = 0
+        var drawCellsEven = 0
         // checking whether any of the free remaining cells can possibly win.
         for (i in uiState.value.gameArray.indices){
             for (j in uiState.value.gameArray[i].indices){
