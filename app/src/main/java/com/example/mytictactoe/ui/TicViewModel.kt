@@ -43,9 +43,7 @@ class TicViewModel: ViewModel() {
 
     fun setSize(slider: Float){
         // rounding to the nearest int, not necessarily to the lowest
-        val size = if((slider - slider.toInt()) > 0.5)
-        {slider.toInt() + 1}
-        else slider.toInt()
+        val size = (slider + 0.5).toInt()
 
         // recomposing only on discrete value changes
         if(size != uiState.value.gameArray.size){
@@ -55,9 +53,7 @@ class TicViewModel: ViewModel() {
 
     fun setWinRow(slider: Float){
         // rounding to the nearest int, not necessarily to the lowest
-        val winRow = if((slider - slider.toInt()) > 0.5)
-        {slider.toInt() + 1}
-        else slider.toInt()
+        val winRow = (slider + 0.5).toInt()
 
         // recomposing only on discrete value changes
         if(winRow != uiState.value.winRow){

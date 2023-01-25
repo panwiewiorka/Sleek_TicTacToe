@@ -1,6 +1,7 @@
 package com.example.mytictactoe.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,14 +34,9 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 ticViewModel.cancelWinRowChange(true) },
             buttons = {
                 MainMenu (
-                    { ticViewModel.setSize(it) },
-                    { ticViewModel.setWinRow(it) },
-                    { ticViewModel.resetGame(ticUiState.gameArray.size)},
-                    { ticViewModel.showMenuDialog(false) },
                     size = ticUiState.gameArray.size,
                     winRow = ticUiState.winRow,
                     memorySettings = ticUiState.memorySettings,
-                    { ticViewModel.loadSettingsFromUiState(false) }
                 )
             },
             shape = RoundedCornerShape(15.dp),
@@ -49,77 +47,54 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
     BoxWithConstraints(contentAlignment = Alignment.Center) {
         ticViewModel.rememberSettingsDuringOrientationChange(maxWidth > maxHeight)
         if(!ticUiState.landscapeMode) {
-            //-------------------------PORTRAIT ORIENTATION
-            //-----------------------------GAME FIELD
-            Box(
-                modifier = Modifier.aspectRatio(1f, false)
-            ) {
-                Column {
-                    for (i in ticUiState.gameArray.indices) {
-                        Row {
-                            for (j in ticUiState.gameArray[i].indices) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .aspectRatio(1f)
-                                        .padding(1.dp)
-                                        .weight(1f)
-                                        .background(CellBackground)
-                                        .clickable(
-                                            enabled = ticUiState.gameArray[i][j].isClickable,
-                                            onClick = { ticViewModel.makeMove(i = i, j = j) }
-                                        )
-                                ) {
-                                    Text(
-                                        text = ticUiState.gameArray[i][j].fieldText,
-                                        color = ticUiState.gameArray[i][j].textColor,
-                                        fontSize = 36.sp
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            //------------------------LAST SCREEN (win / draw)
-            if (ticUiState.lastClickScreen) {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
-            }
+            val screenSize = maxWidth
+            GameField(screenSize = screenSize, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
             //------------------------TOP BAR with ICONS
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = 10.dp),
+                    .align(Alignment.TopCenter),
+                    //.padding(top = 10.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 //---------------------------button  <
-                Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) {
-                        ticViewModel.cancelMove()
-                    }) {
-                    Icon(
-                        painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
-                        null,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .alpha(0.3f)
-                            .padding(start = 10.dp)
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { ticViewModel.cancelMove() },
+                    enabled = ticUiState.cancelMoveButtonEnabled,
+                    shape = RoundedCornerShape(15.dp),
+                    border = null,
+                    elevation = null,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0x00000000),
+                        disabledBackgroundColor = Color(0x00000000)
                     )
-                    if (ticUiState.cancelMoveButtonEnabled) {
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
-                            "Cancel move",
+                            painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
+                            null,
                             modifier = Modifier
                                 .size(32.dp)
+                                .alpha(0.33f)
                                 .padding(start = 10.dp)
                         )
+                        if (ticUiState.cancelMoveButtonEnabled) {
+                            Icon(
+                                painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
+                                "Cancel move",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(start = 10.dp)
+                            )
+                        }
                     }
                 }
-                //---------------------------button  XO
-                Box(contentAlignment = Alignment.Center) {
+                //---------------------------icon  XO
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                ) {
                     val currentMove = if (ticUiState.currentMove == "X")
                         painterResource(R.drawable.close_48px)
                     else painterResource(R.drawable.fiber_manual_record_48px)
@@ -127,113 +102,115 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         currentMove,
                         null,
                         modifier = Modifier
-                            .size(32.dp)
+                            .size(50.dp)
+                            .padding(top = 8.dp, bottom = 10.dp)
                     )
                 }
                 //---------------------------button  []
-                Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable {
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
                         ticViewModel.cancelWinRowChange(false)
                         ticViewModel.showMenuDialog(!ticUiState.menuDialog)
-                    }) {
-                    Icon(
-                        painterResource(R.drawable.crop_square_48px),
-                        "Menu",
-                        modifier = Modifier.size(30.dp)
+                              },
+                    shape = RoundedCornerShape(15.dp),
+                    border = null,
+                    elevation = null,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0x00000000),
                     )
-                    Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
-                }
-            }
-        } else {
-            //________________________LANDSCAPE ORIENTATION
-            //_____________________________GAME FIELD
-            Box(
-                modifier = Modifier.aspectRatio(1f, true)
-            ) {
-                Column {
-                    for (i in ticUiState.gameArray.indices) {
-                        Row {
-                            for (j in ticUiState.gameArray[i].indices) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .aspectRatio(1f)
-                                        .padding(1.dp)
-                                        .weight(1f)
-                                        .background(CellBackground)
-                                        .clickable(
-                                            enabled = ticUiState.gameArray[i][j].isClickable,
-                                            onClick = { ticViewModel.makeMove(i = i, j = j) }
-                                        )
-                                ) {
-                                    Text(
-                                        text = ticUiState.gameArray[i][j].fieldText,
-                                        color = ticUiState.gameArray[i][j].textColor,
-                                        fontSize = 36.sp
-                                    )
-                                }
-                            }
-                        }
+                ) {
+                    Box(contentAlignment = Alignment.Center){
+                        Icon(
+                            painterResource(R.drawable.crop_square_48px),
+                            "Menu",
+                            modifier = Modifier.size(30.dp)
+                        )
+                        Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
                     }
                 }
             }
-            //________________________LAST SCREEN (win / draw)
-            if (ticUiState.lastClickScreen) {
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
-            }
+        } else {
+            val screenSize = maxHeight
+            GameField(screenSize = screenSize, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
             //________________________LEFT BAR with ICONS
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .align(Alignment.CenterStart)
-                    .padding(start = 10.dp, bottom = 22.dp),
+                    .align(Alignment.CenterStart),
+                    //.padding(start = 10.dp, bottom = 22.dp),
                 verticalArrangement = Arrangement.SpaceAround
             ) {
-                //___________________________button  []
-                Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable {
+                //---------------------------button  []
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
                         ticViewModel.cancelWinRowChange(false)
                         ticViewModel.showMenuDialog(!ticUiState.menuDialog)
-                    }) {
-                    Icon(
-                        painterResource(R.drawable.crop_square_48px),
-                        "Menu",
-                        modifier = Modifier.size(30.dp)
+                    },
+                    shape = RoundedCornerShape(15.dp),
+                    border = null,
+                    elevation = null,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0x00000000),
                     )
-                    Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
+                ) {
+                    Box(contentAlignment = Alignment.Center){
+                        Icon(
+                            painterResource(R.drawable.crop_square_48px),
+                            "Menu",
+                            modifier = Modifier.size(30.dp)
+                        )
+                        Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
+                    }
                 }
-                //___________________________button  XO
-                Box(contentAlignment = Alignment.Center) {
+                //---------------------------icon  XO
+                Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .weight(1f)
+                ) {
                     val currentMove = if (ticUiState.currentMove == "X")
                         painterResource(R.drawable.close_48px)
                     else painterResource(R.drawable.fiber_manual_record_48px)
                     Icon(
                         currentMove,
                         null,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .size(47.dp)
+                            .padding(start = 15.dp)
                     )
                 }
-                //___________________________button  <
-                Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.clickable(ticUiState.cancelMoveButtonEnabled) { ticViewModel.cancelMove() }) {
-                    Icon(
-                        painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
-                        null,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .alpha(0.3f)
-                            .padding(start = 10.dp)
+                //---------------------------button  <
+                Button(
+                    modifier = Modifier.weight(1f),
+                    onClick = { ticViewModel.cancelMove() },
+                    enabled = ticUiState.cancelMoveButtonEnabled,
+                    shape = RoundedCornerShape(15.dp),
+                    border = null,
+                    elevation = null,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0x00000000),
+                        disabledBackgroundColor = Color(0x00000000)
                     )
-                    if (ticUiState.cancelMoveButtonEnabled) {
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
-                            "Cancel move",
+                            painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
+                            null,
                             modifier = Modifier
                                 .size(32.dp)
+                                .alpha(0.33f)
                                 .padding(start = 10.dp)
                         )
+                        if (ticUiState.cancelMoveButtonEnabled) {
+                            Icon(
+                                painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
+                                "Cancel move",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(start = 10.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -244,14 +221,10 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
 @Composable
 fun MainMenu(
-               setSize: (Float) -> Unit,
-               setWinRow: (Float) -> Unit,
-               resetGame: (Int) -> Unit,
-               showMenuDialog: (Boolean) -> Unit,
+               ticViewModel: TicViewModel = viewModel(),
                size: Int,
                winRow: Int,
                memorySettings: Boolean,
-               setSettingsFromMemory: (Boolean) -> Unit
 ){
     var sizeSliderPosition by remember { mutableStateOf(3f) }
     var winRowSliderPosition by remember { mutableStateOf(3f) }
@@ -263,7 +236,7 @@ fun MainMenu(
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
         winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
-        setSettingsFromMemory(false)
+        ticViewModel.loadSettingsFromUiState(false)
     }
     Column(
         modifier = Modifier.padding(25.dp),
@@ -275,20 +248,24 @@ fun MainMenu(
             value = sizeSliderPosition,
             onValueChange = {
                 sizeSliderPosition = it
-                setSize(it) },
+                ticViewModel.setSize(it) },
             valueRange = 3f..8f,
             steps = 4,
             onValueChangeFinished = {
                 if(winRowSliderPosition > sizeSliderPosition){
                     winRowSliderPosition = sizeSliderPosition
-                    setWinRow(winRowSliderPosition)
+                    ticViewModel.setWinRow(winRowSliderPosition)
                 }
                 winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
                 winRowUpperLimit = sizeSliderPosition
                                     },
             modifier = Modifier
                 .width(220.dp)
-                .padding(top = 4.dp, bottom = 20.dp)
+                .padding(top = 4.dp, bottom = 20.dp),
+            colors = SliderDefaults.colors(
+                activeTrackColor = MaterialTheme.colors.primary,
+                inactiveTrackColor = MaterialTheme.colors.secondaryVariant
+            )
         )
         Text(text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
         Box(modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
@@ -299,15 +276,14 @@ fun MainMenu(
                 onValueChange = {},
                 valueRange = 3f..8f,
                 steps = 4,
-                modifier = Modifier.width(220.dp)
+                modifier = Modifier.width(220.dp),
             )
             if(winRowUpperLimit != 3f){
                 Slider(
-                    //enabled = winRowUpperLimit != 3f,
                     value = winRowSliderPosition,
                     onValueChange = {
                         winRowSliderPosition = it
-                        setWinRow(it) },
+                        ticViewModel.setWinRow(it) },
                     valueRange = 3f..winRowUpperLimit,
                     steps = winRowSteps,
                     onValueChangeFinished = {
@@ -316,20 +292,77 @@ fun MainMenu(
                             winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f
                         }
                     },
-                    modifier = Modifier
-                        .width((40 * (winRowSteps + 1) + 20).dp)
+                    modifier = Modifier.width((40 * (winRowSteps + 1) + 20).dp),
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = MaterialTheme.colors.primary,
+                        inactiveTrackColor = MaterialTheme.colors.secondaryVariant
+                    )
                 )
             }
         }
         Button(onClick = {
-            resetGame(size)
-            showMenuDialog(false)
-            setWinRow(winRowSliderPosition)
+            ticViewModel.resetGame(size)
+            ticViewModel.showMenuDialog(false)
+            ticViewModel.setWinRow(winRowSliderPosition)
         }) {
             Text(text = "START", fontSize = 20.sp)
         }
     }
 }
+
+
+@Composable
+fun GameField(
+    ticViewModel: TicViewModel = viewModel(),
+    screenSize: Dp,
+    gameArray: Array<Array<Field>>,
+    lastClickScreen: Boolean
+){
+    Box(
+        contentAlignment = Alignment.Center,
+        //modifier = Modifier.aspectRatio(1f, false)
+    ) {
+        Column {
+            for (i in gameArray.indices) {
+                Row {
+                    for (j in gameArray[i].indices) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                //.aspectRatio(1f)
+                                //.padding(1.dp)
+                                //.weight(1f)
+                                .size(screenSize / gameArray.size)
+                                .border(
+                                    width = 1.dp,
+                                    color = Color(0xFF000000),
+                                    shape = RoundedCornerShape(0.dp)
+                                )
+                                .background(CellBackground)
+                                .clickable(
+                                    enabled = gameArray[i][j].isClickable,
+                                    onClick = { ticViewModel.makeMove(i = i, j = j) }
+                                )
+                        ) {
+                            Text(
+                                text = gameArray[i][j].fieldText,
+                                color = gameArray[i][j].textColor,
+                                fontSize = 36.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    //------------------------LAST SCREEN (win / draw)
+    if (lastClickScreen) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+    }
+}
+
 
 
 //========================================
