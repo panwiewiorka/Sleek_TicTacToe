@@ -133,7 +133,7 @@ class TicViewModel: ViewModel() {
                 currentState.copy(lastClickScreen = false)
             }
         } else changeTurn(uiState.value.currentMove)
-        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = ""
+        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = " "
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CurrentMove
         _uiState.update { currentState ->
