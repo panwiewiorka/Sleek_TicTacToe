@@ -96,7 +96,7 @@ class TicViewModel: ViewModel() {
             iTwoMovesBefore = 0
             jTwoMovesBefore = 0
         }
-        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
+        //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
         gameArray[iOneMoveBefore][jOneMoveBefore].textColor = StandartCell
@@ -136,14 +136,14 @@ class TicViewModel: ViewModel() {
         gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = ""
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CurrentMove
-        iOneMoveBefore = iTwoMovesBefore
-        jOneMoveBefore = jTwoMovesBefore
         _uiState.update { currentState ->
             currentState.copy(
                 gameArray = gameArray,
                 cancelMoveButtonEnabled = false
             )
         }
+        iOneMoveBefore = iTwoMovesBefore
+        jOneMoveBefore = jTwoMovesBefore
         cellsLeft++
     }
 
