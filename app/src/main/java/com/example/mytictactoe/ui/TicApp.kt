@@ -49,12 +49,11 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
         if(!ticUiState.landscapeMode) {
             val screenSize = maxWidth
             GameField(screenSize = screenSize, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
-            //------------------------TOP BAR with ICONS
+            //-----------------------VERTICAL LAYOUT, TOP BAR with ICONS
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter),
-                    //.padding(top = 10.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 //---------------------------button  <
@@ -133,7 +132,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
         } else {
             val screenSize = maxHeight
             GameField(screenSize = screenSize, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
-            //________________________LEFT BAR with ICONS
+            //_______________________HORIZONTAL LAYOUT, LEFT BAR with ICONS
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -143,7 +142,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
             ) {
                 //---------------------------button  []
                 Button(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f)
+                        .padding(bottom = 18.dp),
                     onClick = {
                         ticViewModel.cancelWinRowChange(false)
                         ticViewModel.showMenuDialog(!ticUiState.menuDialog)
@@ -168,7 +168,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 Box(contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
-                ) {
+                        .padding(bottom = 22.dp)
+                    ) {
                     val currentMove = if (ticUiState.currentMove == "X")
                         painterResource(R.drawable.close_48px)
                     else painterResource(R.drawable.fiber_manual_record_48px)
@@ -193,7 +194,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         disabledBackgroundColor = Color(0x00000000)
                     )
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
+                    Box(contentAlignment = Alignment.Center,
+                    modifier = Modifier.padding(bottom = 34.dp)) {
                         Icon(
                             painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
                             null,
@@ -320,7 +322,6 @@ fun GameField(
 ){
     Box(
         contentAlignment = Alignment.Center,
-        //modifier = Modifier.aspectRatio(1f, false)
     ) {
         Column {
             for (i in gameArray.indices) {
@@ -329,9 +330,6 @@ fun GameField(
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                //.aspectRatio(1f)
-                                //.padding(1.dp)
-                                //.weight(1f)
                                 .size(screenSize / gameArray.size)
                                 .border(
                                     width = 1.dp,

@@ -20,6 +20,7 @@ class TicViewModel: ViewModel() {
     private var iTwoMovesBefore: Int = 0
     private var jTwoMovesBefore: Int = 0
     private var cellsLeft: Int = 0
+    private var possibleWin: Boolean = false
 
     fun loadSettingsFromUiState(yesNo: Boolean){
         _uiState.update { currentState ->
@@ -262,22 +263,118 @@ class TicViewModel: ViewModel() {
         }
     }
 
+    private fun drawAlgorithm(i: Int, j: Int, currentMove: String){
+        /* Algorithm is similar to checkWin:
+        FOR EVERY cell we are looking forward and backward, in all directions,
+        to find same (X or 0) OR EMPTY cells, adding those founded to compare to winRow.
+
+        Then, if any cell could possibly win - there's no Draw
+         */
+
+        // VERTICAL CHECK forward
+        var n = i
+        var currentRow = 1
+
+        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][j].fieldText != currentMove)){
+            currentRow++
+            n++
+        }
+        // then backward
+        n = i
+        while((n > 0) && (uiState.value.gameArray[n - 1][j].fieldText != currentMove)){
+            currentRow++
+            n--
+        }
+        // if enough ((X or 0) & " ") in a row -> possible Win (no Draw)
+        if (currentRow >= uiState.value.winRow) {
+            possibleWin = true
+            return
+        }
+
+        // HORIZONTAL CHECK
+        var m = j
+        currentRow = 1
+
+        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[i][m + 1].fieldText != currentMove)){
+            currentRow++
+            m++
+        }
+        m = j
+        while((m > 0) && (uiState.value.gameArray[i][m - 1].fieldText != currentMove)){
+            currentRow++
+            m--
+        }
+        if (currentRow >= uiState.value.winRow) {
+            possibleWin = true
+            return
+        }
+
+        // MAIN DIAGONAL CHECK
+        n = i
+        m = j
+        currentRow = 1
+
+        while((n + 1 < uiState.value.gameArray.size) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][m + 1].fieldText != currentMove)){
+            currentRow++
+            n++
+            m++
+        }
+        n = i
+        m = j
+        while((n > 0) && (m > 0) && (uiState.value.gameArray[n - 1][m - 1].fieldText != currentMove)){
+            currentRow++
+            n--
+            m--
+        }
+        if (currentRow >= uiState.value.winRow) {
+            possibleWin = true
+            return
+        }
+
+        // OTHER DIAGONAL CHECK
+        n = i
+        m = j
+        currentRow = 1
+
+        while((n + 1 < uiState.value.gameArray.size) && (m > 0) && (uiState.value.gameArray[n + 1][m - 1].fieldText != currentMove)){
+            currentRow++
+            n++
+            m--
+        }
+        n = i
+        m = j
+        while((n > 0) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n - 1][m + 1].fieldText != currentMove)){
+            currentRow++
+            n--
+            m++
+        }
+        if (currentRow >= uiState.value.winRow) {
+            possibleWin = true
+            return
+        }
+    }
+
     private fun checkDraw(){
-        var drawCellsOdd = 0
-        var drawCellsEven = 0
-        // checking whether any of the free remaining cells can possibly win.
+        possibleWin = false
+        // checking whether any of the free remaining cells can possibly win
+        changeTurn(uiState.value.currentMove)  // X or 0
         for (i in uiState.value.gameArray.indices){
             for (j in uiState.value.gameArray[i].indices){
-                if(uiState.value.gameArray[i][j].fieldText == " "){
-                    drawCellsOdd += drawAlgorithm(i, j)   // adding 1 to drawCellsOdd if X (or O) cannot win in this cell
-                    changeTurn(uiState.value.currentMove)
-                    drawCellsEven += drawAlgorithm(i, j)   // adding 1 to drawCellsOdd if 0 (or X) cannot win in this cell
-                    changeTurn(uiState.value.currentMove)
+                if((uiState.value.gameArray[i][j].fieldText == " ") && (!possibleWin)){
+                    drawAlgorithm(i, j, uiState.value.currentMove)
                 }
             }
         }
-        //  (if no possible winning cells left -> DRAW)
-        if(((drawCellsOdd == cellsLeft) && (drawCellsEven == cellsLeft)) || ((cellsLeft == 1) && (drawCellsOdd == 1)) || (cellsLeft == 0)){
+        changeTurn(uiState.value.currentMove)  // 0 or X
+        for (i in uiState.value.gameArray.indices){
+            for (j in uiState.value.gameArray[i].indices){
+                if((uiState.value.gameArray[i][j].fieldText == " ") && (!possibleWin)){
+                    drawAlgorithm(i, j, uiState.value.currentMove)
+                }
+            }
+        }
+        // if there are no such cells -> Draw
+        if(!possibleWin) {
             for(i in uiState.value.gameArray.indices) {
                 for(j in uiState.value.gameArray.indices) {
                     uiState.value.gameArray[i][j].textColor = Draw
@@ -287,85 +384,6 @@ class TicViewModel: ViewModel() {
                 currentState.copy(lastClickScreen = true)
             }
         }
-    }
-
-    private fun drawAlgorithm(i: Int, j: Int): Int{
-        /* Algorithm is similar to checkWin:
-        from currently clicked cell we are looking forward and backward, in all directions,
-        to find same (X or 0) OR EMPTY cells, adding those founded to compare to winRow.
-
-        Then (contrary to checkWin algorithm)
-        we have to make sure that NONE of the four directions can win
-        (DON'T have enough X or EMPTY / 0 or EMPTY in a row)
-         */
-
-        // VERTICAL CHECK forward
-        var n = i
-        var currentVerticalRow = 1
-
-        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][j].fieldText != uiState.value.currentMove)){
-            currentVerticalRow++
-            n++
-        }
-        // then backward
-        n = i
-        while((n > 0) && (uiState.value.gameArray[n - 1][j].fieldText != uiState.value.currentMove)){
-            currentVerticalRow++
-            n--
-        }
-
-        // HORIZONTAL CHECK
-        var m = j
-        var currentHorizontalRow = 1
-
-        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[i][m + 1].fieldText != uiState.value.currentMove)){
-            currentHorizontalRow++
-            m++
-        }
-        m = j
-        while((m > 0) && (uiState.value.gameArray[i][m - 1].fieldText != uiState.value.currentMove)){
-            currentHorizontalRow++
-            m--
-        }
-
-        // MAIN DIAGONAL CHECK
-        n = i
-        m = j
-        var currentMainDiagonalRow = 1
-
-        while((n + 1 < uiState.value.gameArray.size) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][m + 1].fieldText != uiState.value.currentMove)){
-            currentMainDiagonalRow++
-            n++
-            m++
-        }
-        n = i
-        m = j
-        while((n > 0) && (m > 0) && (uiState.value.gameArray[n - 1][m - 1].fieldText != uiState.value.currentMove)){
-            currentMainDiagonalRow++
-            n--
-            m--
-        }
-
-        // OTHER DIAGONAL CHECK
-        n = i
-        m = j
-        var currentOtherDiagonalRow = 1
-
-        while((n + 1 < uiState.value.gameArray.size) && (m > 0) && (uiState.value.gameArray[n + 1][m - 1].fieldText != uiState.value.currentMove)){
-            currentOtherDiagonalRow++
-            n++
-            m--
-        }
-        n = i
-        m = j
-        while((n > 0) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n - 1][m + 1].fieldText != uiState.value.currentMove)){
-            currentOtherDiagonalRow++
-            n--
-            m++
-        }
-
-        // --------TOTAL CHECK
-        return if ((currentVerticalRow < uiState.value.winRow) && (currentHorizontalRow < uiState.value.winRow) && (currentMainDiagonalRow < uiState.value.winRow) && (currentOtherDiagonalRow < uiState.value.winRow)) 1 else 0
     }
 
 }
