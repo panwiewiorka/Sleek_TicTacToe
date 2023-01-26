@@ -17,7 +17,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mytictactoe.Field
 import com.example.mytictactoe.R
+import com.example.mytictactoe.cells
 import com.example.mytictactoe.ui.theme.CellBackground
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 
@@ -47,8 +49,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
     BoxWithConstraints(contentAlignment = Alignment.Center) {
         ticViewModel.rememberSettingsDuringOrientationChange(maxWidth > maxHeight)
         if(!ticUiState.landscapeMode) {
-            val screenSize = maxWidth
-            GameField(screenSize = screenSize, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
+            GameField(screenSize = maxWidth, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
             //-----------------------VERTICAL LAYOUT, TOP BAR with ICONS
             Row(
                 modifier = Modifier
@@ -94,7 +95,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     modifier = Modifier
                         .weight(1f)
                 ) {
-                    val currentMove = if (ticUiState.currentMove == "X")
+                    val currentMove = if (ticUiState.currentMove == cells.x)
                         painterResource(R.drawable.close_48px)
                     else painterResource(R.drawable.fiber_manual_record_48px)
                     Icon(
@@ -130,14 +131,12 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 }
             }
         } else {
-            val screenSize = maxHeight
-            GameField(screenSize = screenSize, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
+            GameField(screenSize = maxHeight, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
             //_______________________HORIZONTAL LAYOUT, LEFT BAR with ICONS
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .align(Alignment.CenterStart),
-                    //.padding(start = 10.dp, bottom = 22.dp),
                 verticalArrangement = Arrangement.SpaceAround
             ) {
                 //---------------------------button  []
@@ -170,7 +169,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         .weight(1f)
                         .padding(bottom = 22.dp)
                     ) {
-                    val currentMove = if (ticUiState.currentMove == "X")
+                    val currentMove = if (ticUiState.currentMove == cells.x)
                         painterResource(R.drawable.close_48px)
                     else painterResource(R.drawable.fiber_manual_record_48px)
                     Icon(

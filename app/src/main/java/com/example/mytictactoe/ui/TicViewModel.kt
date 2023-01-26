@@ -1,6 +1,8 @@
 package com.example.mytictactoe.ui
 
 import androidx.lifecycle.ViewModel
+import com.example.mytictactoe.Field
+import com.example.mytictactoe.cells
 import com.example.mytictactoe.ui.theme.CurrentMove
 import com.example.mytictactoe.ui.theme.Draw
 import com.example.mytictactoe.ui.theme.StandartCell
@@ -77,13 +79,13 @@ class TicViewModel: ViewModel() {
     }
 
     fun resetGame(size: Int){
-        val gameArray = Array(size) { Array(size) { Field(isClickable = true, fieldText = " ", textColor = StandartCell) } }
+        val gameArray = Array(size) { Array(size) { Field(isClickable = true, fieldText = cells.empty, textColor = StandartCell) } }
         _uiState.update { currentState ->
             currentState.copy(
                 lastClickScreen = false,
                 cancelMoveButtonEnabled = false,
                 gameArray = gameArray,
-                currentMove = "X",
+                currentMove = cells.x,
             )
         }
         cellsLeft = size * size
@@ -134,7 +136,7 @@ class TicViewModel: ViewModel() {
                 currentState.copy(lastClickScreen = false)
             }
         } else changeTurn(uiState.value.currentMove)
-        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = " "
+        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = cells.empty
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CurrentMove
         _uiState.update { currentState ->
@@ -149,7 +151,7 @@ class TicViewModel: ViewModel() {
     }
 
     private fun changeTurn(currentMove: String){
-        val updatedTurn = if(currentMove == "X") "0" else "X"
+        val updatedTurn = if(currentMove == cells.x) cells.o else cells.x
         _uiState.update { a ->
             a.copy(currentMove = updatedTurn)
         }
@@ -263,6 +265,38 @@ class TicViewModel: ViewModel() {
         }
     }
 
+    private fun checkDraw(){
+        possibleWin = false
+        // checking whether any of the free remaining cells can possibly win
+        changeTurn(uiState.value.currentMove)  // X or 0
+        for (i in uiState.value.gameArray.indices){
+            for (j in uiState.value.gameArray[i].indices){
+                if((uiState.value.gameArray[i][j].fieldText == cells.empty) && (!possibleWin)){
+                    drawAlgorithm(i, j, uiState.value.currentMove)
+                }
+            }
+        }
+        changeTurn(uiState.value.currentMove)  // 0 or X
+        for (i in uiState.value.gameArray.indices){
+            for (j in uiState.value.gameArray[i].indices){
+                if((uiState.value.gameArray[i][j].fieldText == cells.empty) && (!possibleWin)){
+                    drawAlgorithm(i, j, uiState.value.currentMove)
+                }
+            }
+        }
+        // if there are no such cells -> Draw
+        if(!possibleWin) {
+            for(i in uiState.value.gameArray.indices) {
+                for(j in uiState.value.gameArray.indices) {
+                    uiState.value.gameArray[i][j].textColor = Draw
+                }
+            }
+            _uiState.update { currentState ->
+                currentState.copy(lastClickScreen = true)
+            }
+        }
+    }
+
     private fun drawAlgorithm(i: Int, j: Int, currentMove: String){
         /* Algorithm is similar to checkWin:
         FOR EVERY cell we are looking forward and backward, in all directions,
@@ -285,7 +319,7 @@ class TicViewModel: ViewModel() {
             currentRow++
             n--
         }
-        // if enough ((X or 0) & " ") in a row -> possible Win (no Draw)
+        // if enough ((X or 0) + " ") in a row -> possible Win (no Draw)
         if (currentRow >= uiState.value.winRow) {
             possibleWin = true
             return
@@ -351,38 +385,6 @@ class TicViewModel: ViewModel() {
         if (currentRow >= uiState.value.winRow) {
             possibleWin = true
             return
-        }
-    }
-
-    private fun checkDraw(){
-        possibleWin = false
-        // checking whether any of the free remaining cells can possibly win
-        changeTurn(uiState.value.currentMove)  // X or 0
-        for (i in uiState.value.gameArray.indices){
-            for (j in uiState.value.gameArray[i].indices){
-                if((uiState.value.gameArray[i][j].fieldText == " ") && (!possibleWin)){
-                    drawAlgorithm(i, j, uiState.value.currentMove)
-                }
-            }
-        }
-        changeTurn(uiState.value.currentMove)  // 0 or X
-        for (i in uiState.value.gameArray.indices){
-            for (j in uiState.value.gameArray[i].indices){
-                if((uiState.value.gameArray[i][j].fieldText == " ") && (!possibleWin)){
-                    drawAlgorithm(i, j, uiState.value.currentMove)
-                }
-            }
-        }
-        // if there are no such cells -> Draw
-        if(!possibleWin) {
-            for(i in uiState.value.gameArray.indices) {
-                for(j in uiState.value.gameArray.indices) {
-                    uiState.value.gameArray[i][j].textColor = Draw
-                }
-            }
-            _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
-            }
         }
     }
 
