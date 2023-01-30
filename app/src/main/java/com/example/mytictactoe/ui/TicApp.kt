@@ -49,14 +49,22 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
     BoxWithConstraints(contentAlignment = Alignment.Center) {
         ticViewModel.rememberSettingsDuringOrientationChange(maxWidth > maxHeight)
         if(!ticUiState.landscapeMode) {
-            GameField(screenSize = maxWidth, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
-            //-----------------------VERTICAL LAYOUT, TOP BAR with ICONS
+
+            GameField(
+                vertPadding = 50.dp,
+                horPadding = 0.dp,
+                gameArray = ticUiState.gameArray,
+                lastClickScreen = ticUiState.lastClickScreen
+            )
+
+            //-----------------------VERTICAL LAYOUT: TOP BAR with ICONS
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
+
                 //---------------------------button  <
                 Button(
                     modifier = Modifier.weight(1f),
@@ -90,8 +98,10 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         }
                     }
                 }
+
                 //---------------------------icon  XO
-                Box(contentAlignment = Alignment.Center,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
                 ) {
@@ -106,6 +116,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                             .padding(top = 8.dp, bottom = 10.dp)
                     )
                 }
+
                 //---------------------------button  []
                 Button(
                     modifier = Modifier.weight(1f),
@@ -131,14 +142,22 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 }
             }
         } else {
-            GameField(screenSize = maxHeight, gameArray = ticUiState.gameArray, lastClickScreen = ticUiState.lastClickScreen)
-            //_______________________HORIZONTAL LAYOUT, LEFT BAR with ICONS
+
+            GameField(
+                vertPadding = 0.dp,
+                horPadding = 50.dp,
+                gameArray = ticUiState.gameArray,
+                lastClickScreen = ticUiState.lastClickScreen
+            )
+
+            //_______________________HORIZONTAL LAYOUT: LEFT BAR with ICONS
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
                     .align(Alignment.CenterStart),
                 verticalArrangement = Arrangement.SpaceAround
             ) {
+
                 //---------------------------button  []
                 Button(
                     modifier = Modifier.weight(1f)
@@ -163,11 +182,13 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
                     }
                 }
+
                 //---------------------------icon  XO
-                Box(contentAlignment = Alignment.Center,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(bottom = 22.dp)
+                        .padding(bottom = 24.dp)
                     ) {
                     val currentMove = if (ticUiState.currentMove == cells.x)
                         painterResource(R.drawable.close_48px)
@@ -180,6 +201,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                             .padding(start = 15.dp)
                     )
                 }
+
                 //---------------------------button  <
                 Button(
                     modifier = Modifier.weight(1f),
@@ -222,16 +244,17 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
 @Composable
 fun MainMenu(
-               ticViewModel: TicViewModel = viewModel(),
-               size: Int,
-               winRow: Int,
-               memorySettings: Boolean,
+    ticViewModel: TicViewModel = viewModel(),
+    size: Int,
+    winRow: Int,
+    memorySettings: Boolean,
 ){
     var sizeSliderPosition by remember { mutableStateOf(3f) }
     var winRowSliderPosition by remember { mutableStateOf(3f) }
     var winRowUpperLimit by remember { mutableStateOf(3f) }
     var winRowSteps by remember { mutableStateOf(0) }
-    // ^^ by remember { mutableStateOf() }   made for sliders local operation. Settings are saved in UiState.
+    // ^^ by remember { mutableStateOf() }   made for sliders local operation.
+    // Settings are saved in UiState.
     if(memorySettings){
         sizeSliderPosition = size.toFloat()
         winRowSliderPosition = winRow.toFloat()
@@ -288,7 +311,8 @@ fun MainMenu(
                     valueRange = 3f..winRowUpperLimit,
                     steps = winRowSteps,
                     onValueChangeFinished = {
-                        // When winRowUpperLimit == 4f, steps = 0, so we have to manually implement changes to be discrete.
+                        // When winRowUpperLimit == 4f, steps = 0,
+                        // so we have to manually implement changes to be discrete.
                         if(winRowUpperLimit == 4f){
                             winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f
                         }
@@ -314,14 +338,17 @@ fun MainMenu(
 
 @Composable
 fun GameField(
+    vertPadding: Dp,
+    horPadding: Dp,
     ticViewModel: TicViewModel = viewModel(),
-    screenSize: Dp,
     gameArray: Array<Array<Field>>,
     lastClickScreen: Boolean
 ){
-    Box(
+    BoxWithConstraints(
+        modifier = Modifier.padding(vertical = vertPadding, horizontal = horPadding),
         contentAlignment = Alignment.Center,
     ) {
+        val fieldSize = if(maxWidth < maxHeight) maxWidth else maxHeight
         Column {
             for (i in gameArray.indices) {
                 Row {
@@ -329,7 +356,7 @@ fun GameField(
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(screenSize / gameArray.size)
+                                .size(fieldSize / gameArray.size)
                                 .border(
                                     width = 1.dp,
                                     color = Color(0xFF000000),
