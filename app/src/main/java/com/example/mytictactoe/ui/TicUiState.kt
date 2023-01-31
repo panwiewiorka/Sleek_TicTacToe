@@ -1,8 +1,8 @@
 package com.example.mytictactoe.ui
 
+import com.example.mytictactoe.CellColors
 import com.example.mytictactoe.Field
 import com.example.mytictactoe.cells
-import com.example.mytictactoe.ui.theme.StandartCell
 
 data class TicUiState(
     val landscapeMode: Boolean = false,
@@ -13,5 +13,7 @@ data class TicUiState(
     val savedWinRow: Int = 3,
     val currentMove: String = cells.x,
     val cancelMoveButtonEnabled: Boolean = false,
-    val gameArray: Array<Array<Field>> = Array(3) { i -> Array(3) { j -> Field(isClickable = true, fieldText = cells.empty, textColor = StandartCell) } }
+    val gameArray: Array<Array<Field>> = Array(3) { i -> Array(3) { j -> Field(
+        isClickable = true, fieldText = cells.empty, textColor = CellColors.STANDART
+    ) } }
 )

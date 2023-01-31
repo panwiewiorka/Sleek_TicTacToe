@@ -3,6 +3,7 @@ package com.example.mytictactoe.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -20,7 +21,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mytictactoe.Field
 import com.example.mytictactoe.R
 import com.example.mytictactoe.cells
-import com.example.mytictactoe.ui.theme.CellBackground
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 
 
@@ -160,7 +160,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
                 //---------------------------button  []
                 Button(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
                         .padding(bottom = 18.dp),
                     onClick = {
                         ticViewModel.cancelWinRowChange(false)
@@ -288,7 +289,7 @@ fun MainMenu(
                 .padding(top = 4.dp, bottom = 20.dp),
             colors = SliderDefaults.colors(
                 activeTrackColor = MaterialTheme.colors.primary,
-                inactiveTrackColor = MaterialTheme.colors.secondaryVariant
+                inactiveTrackColor = MaterialTheme.colors.primaryVariant
             )
         )
         Text(text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
@@ -320,17 +321,33 @@ fun MainMenu(
                     modifier = Modifier.width((40 * (winRowSteps + 1) + 20).dp),
                     colors = SliderDefaults.colors(
                         activeTrackColor = MaterialTheme.colors.primary,
-                        inactiveTrackColor = MaterialTheme.colors.secondaryVariant
+                        inactiveTrackColor = MaterialTheme.colors.primaryVariant
                     )
                 )
             }
         }
-        Button(onClick = {
-            ticViewModel.resetGame(size)
-            ticViewModel.showMenuDialog(false)
-            ticViewModel.setWinRow(winRowSliderPosition)
-        }) {
-            Text(text = "START", fontSize = 20.sp)
+        Row(
+            modifier = Modifier.width(204.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ){
+            val currentMode = if (isSystemInDarkTheme())
+                painterResource(R.drawable.light_mode_48px)
+            else painterResource(R.drawable.dark_mode_48px)
+            Icon(
+                currentMode,
+                null,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable(true) {}
+                //.padding(top = 8.dp, bottom = 10.dp),
+            )
+            Button(onClick = {
+                ticViewModel.resetGame(size)
+                ticViewModel.showMenuDialog(false)
+                ticViewModel.setWinRow(winRowSliderPosition)
+            }) {
+                Text(text = "START", fontSize = 20.sp)
+            }
         }
     }
 }
@@ -359,10 +376,10 @@ fun GameField(
                                 .size(fieldSize / gameArray.size)
                                 .border(
                                     width = 1.dp,
-                                    color = Color(0xFF000000),
+                                    color = MaterialTheme.colors.background,
                                     shape = RoundedCornerShape(0.dp)
                                 )
-                                .background(CellBackground)
+                                .background(MaterialTheme.colors.secondary)
                                 .clickable(
                                     enabled = gameArray[i][j].isClickable,
                                     onClick = { ticViewModel.makeMove(i = i, j = j) }
@@ -370,7 +387,7 @@ fun GameField(
                         ) {
                             Text(
                                 text = gameArray[i][j].fieldText,
-                                color = gameArray[i][j].textColor,
+                                color = gameArray[i][j].textColor.color,
                                 fontSize = 36.sp
                             )
                         }

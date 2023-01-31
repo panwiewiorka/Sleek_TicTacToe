@@ -1,12 +1,9 @@
 package com.example.mytictactoe.ui
 
 import androidx.lifecycle.ViewModel
+import com.example.mytictactoe.CellColors
 import com.example.mytictactoe.Field
 import com.example.mytictactoe.cells
-import com.example.mytictactoe.ui.theme.CurrentMove
-import com.example.mytictactoe.ui.theme.Draw
-import com.example.mytictactoe.ui.theme.StandartCell
-import com.example.mytictactoe.ui.theme.Win
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,7 +76,9 @@ class TicViewModel: ViewModel() {
     }
 
     fun resetGame(size: Int){
-        val gameArray = Array(size) { Array(size) { Field(isClickable = true, fieldText = cells.empty, textColor = StandartCell) } }
+        val gameArray = Array(size) { Array(size) { Field(
+            isClickable = true, fieldText = cells.empty, textColor = CellColors.STANDART
+        ) } }
         _uiState.update { currentState ->
             currentState.copy(
                 lastClickScreen = false,
@@ -102,8 +101,8 @@ class TicViewModel: ViewModel() {
         //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
-        gameArray[iOneMoveBefore][jOneMoveBefore].textColor = StandartCell
-        gameArray[i][j].textColor = CurrentMove
+        gameArray[iOneMoveBefore][jOneMoveBefore].textColor = CellColors.STANDART
+        gameArray[i][j].textColor = CellColors.CURRENT
         gameArray[i][j].fieldText = uiState.value.currentMove
         gameArray[i][j].isClickable = false
         _uiState.update { currentState ->
@@ -129,7 +128,7 @@ class TicViewModel: ViewModel() {
         if(uiState.value.lastClickScreen){
             for(i in gameArray.indices) {
                 for(j in gameArray.indices) {
-                    gameArray[i][j].textColor = StandartCell
+                    gameArray[i][j].textColor = CellColors.STANDART
                 }
             }
             _uiState.update { currentState ->
@@ -138,7 +137,7 @@ class TicViewModel: ViewModel() {
         } else changeTurn(uiState.value.currentMove)
         gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = cells.empty
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
-        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CurrentMove
+        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CellColors.CURRENT
         _uiState.update { currentState ->
             currentState.copy(
                 gameArray = gameArray,
@@ -183,7 +182,7 @@ class TicViewModel: ViewModel() {
         // if enough X or 0 in a row -> WIN
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][j].textColor = Win
+                uiState.value.gameArray[a][j].textColor = CellColors.WIN
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClickScreen = true)
@@ -205,7 +204,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in m until m+currentRow) {
-                uiState.value.gameArray[i][a].textColor = Win
+                uiState.value.gameArray[i][a].textColor = CellColors.WIN
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClickScreen = true)
@@ -231,7 +230,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][a-n+m].textColor = Win
+                uiState.value.gameArray[a][a-n+m].textColor = CellColors.WIN
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClickScreen = true)
@@ -257,7 +256,7 @@ class TicViewModel: ViewModel() {
         }
         if (currentRow >= uiState.value.winRow) {
             for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][m-a+n].textColor = Win
+                uiState.value.gameArray[a][m-a+n].textColor = CellColors.WIN
             }
             _uiState.update { currentState ->
                 currentState.copy(lastClickScreen = true)
@@ -288,7 +287,7 @@ class TicViewModel: ViewModel() {
         if(!possibleWin) {
             for(i in uiState.value.gameArray.indices) {
                 for(j in uiState.value.gameArray.indices) {
-                    uiState.value.gameArray[i][j].textColor = Draw
+                    uiState.value.gameArray[i][j].textColor = CellColors.DRAW
                 }
             }
             _uiState.update { currentState ->
