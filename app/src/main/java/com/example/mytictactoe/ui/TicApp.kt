@@ -12,7 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -28,7 +31,7 @@ import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
     val ticUiState by ticViewModel.uiState.collectAsState()
 
-    //----------------------------POPUP MENU DIALOG
+    //----------------------------POPUP MENU SCREEN
     if (ticUiState.menuDialog){
         AlertDialog(
             onDismissRequest = {
@@ -42,6 +45,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 )
             },
             shape = RoundedCornerShape(15.dp),
+            modifier = Modifier.testTag("Menu Window"),
         )
     }
 
@@ -67,7 +71,9 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
                 //---------------------------button  <
                 Button(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("Cancel Button"),
                     onClick = { ticViewModel.cancelMove() },
                     enabled = ticUiState.cancelMoveButtonEnabled,
                     shape = RoundedCornerShape(15.dp),
@@ -94,6 +100,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                                 modifier = Modifier
                                     .size(32.dp)
                                     .padding(start = 10.dp)
+                                    .testTag("Cancel Icon")
                             )
                         }
                     }
@@ -108,18 +115,23 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     val currentMove = if (ticUiState.currentMove == cells.x)
                         painterResource(R.drawable.close_48px)
                     else painterResource(R.drawable.fiber_manual_record_48px)
+                    val testCurrentMoveString = if (ticUiState.currentMove == cells.x)
+                        "currentMove: X" else "currentMove: 0"
                     Icon(
                         currentMove,
                         null,
                         modifier = Modifier
                             .size(50.dp)
                             .padding(top = 8.dp, bottom = 10.dp)
+                            .testTag(testCurrentMoveString)
                     )
                 }
 
                 //---------------------------button  []
                 Button(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("Menu Button"),
                     onClick = {
                         ticViewModel.cancelWinRowChange(false)
                         ticViewModel.showMenuDialog(!ticUiState.menuDialog)
@@ -137,7 +149,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                             "Menu",
                             modifier = Modifier.size(30.dp)
                         )
-                        Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
+                        Text(text = "${ticUiState.winRow}", fontSize = 18.sp, modifier = Modifier.testTag("winRow square"))
                     }
                 }
             }
@@ -286,7 +298,8 @@ fun MainMenu(
                                     },
             modifier = Modifier
                 .width(220.dp)
-                .padding(top = 4.dp, bottom = 20.dp),
+                .padding(top = 4.dp, bottom = 20.dp)
+                .semantics { contentDescription = "Board size: ${(sizeSliderPosition + 0.5).toInt()}" },
             colors = SliderDefaults.colors(
                 activeTrackColor = MaterialTheme.colors.primary,
                 inactiveTrackColor = MaterialTheme.colors.primaryVariant
@@ -318,7 +331,9 @@ fun MainMenu(
                             winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f
                         }
                     },
-                    modifier = Modifier.width((40 * (winRowSteps + 1) + 20).dp),
+                    modifier = Modifier
+                        .width((40 * (winRowSteps + 1) + 20).dp)
+                        .testTag("winRow Slider"),
                     colors = SliderDefaults.colors(
                         activeTrackColor = MaterialTheme.colors.primary,
                         inactiveTrackColor = MaterialTheme.colors.primaryVariant
@@ -384,11 +399,13 @@ fun GameField(
                                     enabled = gameArray[i][j].isClickable,
                                     onClick = { ticViewModel.makeMove(i = i, j = j) }
                                 )
+                                .testTag("Cell $i $j")
                         ) {
                             Text(
                                 text = gameArray[i][j].fieldText,
                                 color = gameArray[i][j].textColor.color,
-                                fontSize = 36.sp
+                                fontSize = 36.sp,
+                                modifier = Modifier.testTag("Text $i $j")
                             )
                         }
                     }
@@ -400,6 +417,7 @@ fun GameField(
     if (lastClickScreen) {
         Box(modifier = Modifier
             .fillMaxSize()
+            .testTag("Last Screen")
             .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
     }
 }

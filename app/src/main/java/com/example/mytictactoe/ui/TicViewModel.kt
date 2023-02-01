@@ -267,7 +267,7 @@ class TicViewModel: ViewModel() {
     private fun checkDraw(){
         possibleWin = false
         // checking whether any of the free remaining cells can possibly win
-        changeTurn(uiState.value.currentMove)  // X or 0
+        changeTurn(uiState.value.currentMove)  // for X or 0
         for (i in uiState.value.gameArray.indices){
             for (j in uiState.value.gameArray[i].indices){
                 if((uiState.value.gameArray[i][j].fieldText == cells.empty) && (!possibleWin)){
@@ -275,7 +275,7 @@ class TicViewModel: ViewModel() {
                 }
             }
         }
-        changeTurn(uiState.value.currentMove)  // 0 or X
+        changeTurn(uiState.value.currentMove)  // for 0 or X
         for (i in uiState.value.gameArray.indices){
             for (j in uiState.value.gameArray[i].indices){
                 if((uiState.value.gameArray[i][j].fieldText == cells.empty) && (!possibleWin)){
