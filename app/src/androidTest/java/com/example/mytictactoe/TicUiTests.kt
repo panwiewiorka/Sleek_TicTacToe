@@ -55,9 +55,9 @@ class TicUiTests {
         //verifyMenuIsVisible()
         composeTestRule.onNodeWithTag("winRow Slider").assertDoesNotExist()
         composeTestRule.onNodeWithContentDescription("Board size: 3").performTouchInput {
-            swipe(start = Offset(0f, 0f) , end = Offset(100f, 0f))
+            swipe(start = Offset(0f, 0f) , end = Offset(150f, 0f))
         }
-        composeTestRule.onNodeWithText("Board size: 4").assertExists("No BoardSize 4 Text")
+        composeTestRule.onNodeWithTag("Board Size").assertTextEquals("Board size: 4")
         composeTestRule.onNodeWithTag("winRow Slider").assertExists("No winRow Slider is visible")
     }
 
@@ -68,7 +68,7 @@ class TicUiTests {
         composeTestRule.onNodeWithTag("winRow Slider").performTouchInput {
             swipe(start = Offset(0f, 0f) , end = Offset(150f, 0f))
         }
-        composeTestRule.onNodeWithText("Win row: 4").assertExists("No WinRow 4 Text")
+        composeTestRule.onNodeWithTag("Win Row").assertTextEquals("Win row: 4")
         composeTestRule.onNodeWithTag("winRow square", true).assertTextEquals("4")
     }
 

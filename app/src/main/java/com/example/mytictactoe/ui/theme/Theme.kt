@@ -10,14 +10,13 @@ import androidx.compose.ui.graphics.Color
 
 @SuppressLint("ConflictingOnColor")
 private val DarkColorPalette = darkColors(
-    primary = Purple200,
+    primary = SliderDark,
     primaryVariant = SliderBgDark,
     secondaryVariant = SliderBgDark,
     surface = Color.Black,
     secondary = CellBackgroundDark,
     onSecondary = StandartCellDark,
-
-
+    background = BackgroundDark,
 )
 
 private val LightColorPalette = lightColors(

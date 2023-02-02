@@ -2,25 +2,24 @@ package com.example.mytictactoe
 
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import com.example.mytictactoe.ui.theme.current
 import com.example.mytictactoe.ui.theme.draw
 import com.example.mytictactoe.ui.theme.win
 
+
 data class Field(
     var isClickable: Boolean,
-    var fieldText: String,
-    var textColor: CellColors
+    var fieldText: CellValues,
+    var textColor: CellColors,
 )
 
 
-data class CellValues(
-    val empty: String = " ",
-    val x: String = "X",
-    val o: String = "0"
-)
-val cells = CellValues()
+enum class CellValues(val cellValue: String){
+    EMPTY(" "),
+    X("X"),
+    O("0")
+}
 
 
 enum class CellColors {

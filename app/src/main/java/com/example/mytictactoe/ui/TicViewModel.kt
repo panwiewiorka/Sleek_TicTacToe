@@ -1,9 +1,10 @@
 package com.example.mytictactoe.ui
 
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import com.example.mytictactoe.CellColors
+import com.example.mytictactoe.CellValues
 import com.example.mytictactoe.Field
-import com.example.mytictactoe.cells
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,9 +29,11 @@ class TicViewModel: ViewModel() {
     }
 
     fun rememberSettingsDuringOrientationChange(yesNo: Boolean){
-        if(yesNo != uiState.value.landscapeMode) loadSettingsFromUiState(true)
-        _uiState.update { currentState ->
-            currentState.copy(landscapeMode = yesNo)
+        if(yesNo != uiState.value.landscapeMode) {
+            loadSettingsFromUiState(true)
+            _uiState.update { currentState ->
+                currentState.copy(landscapeMode = yesNo)
+            }
         }
     }
 
@@ -48,6 +51,25 @@ class TicViewModel: ViewModel() {
         // recomposing only on discrete value changes
         if(size != uiState.value.gameArray.size){
             resetGame(size)
+        }
+    }
+
+    private fun setCellFontSize(gameFieldSize: Int) {
+        // trying to change font size via setCellFontSize(),
+        // without unnecessary recomposition (available by AutoResizedText() composable)
+        val fontReSize = when(gameFieldSize){
+            3 -> 68.sp
+            4 -> 60.sp
+            5 -> 52.sp
+            6 -> 44.sp
+            7 -> 36.sp
+            8 -> 28.sp
+            else -> 68.sp
+        }
+        _uiState.update { a ->
+            a.copy(
+                cellFontSize = fontReSize
+            )
         }
     }
 
@@ -76,15 +98,18 @@ class TicViewModel: ViewModel() {
     }
 
     fun resetGame(size: Int){
+        setCellFontSize(size)
         val gameArray = Array(size) { Array(size) { Field(
-            isClickable = true, fieldText = cells.empty, textColor = CellColors.STANDART
+            isClickable = true,
+            fieldText = CellValues.EMPTY,
+            textColor = CellColors.STANDART,
         ) } }
         _uiState.update { currentState ->
             currentState.copy(
                 lastClickScreen = false,
                 cancelMoveButtonEnabled = false,
                 gameArray = gameArray,
-                currentMove = cells.x,
+                currentMove = CellValues.X,
             )
         }
         cellsLeft = size * size
@@ -135,7 +160,7 @@ class TicViewModel: ViewModel() {
                 currentState.copy(lastClickScreen = false)
             }
         } else changeTurn(uiState.value.currentMove)
-        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = cells.empty
+        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = CellValues.EMPTY
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CellColors.CURRENT
         _uiState.update { currentState ->
@@ -149,14 +174,14 @@ class TicViewModel: ViewModel() {
         cellsLeft++
     }
 
-    private fun changeTurn(currentMove: String){
-        val updatedTurn = if(currentMove == cells.x) cells.o else cells.x
+    private fun changeTurn(currentMove: CellValues){
+        val updatedTurn = if(currentMove == CellValues.X) CellValues.O else CellValues.X
         _uiState.update { a ->
             a.copy(currentMove = updatedTurn)
         }
     }
 
-    private fun checkWin(i: Int, j: Int, currentMove: String){
+    private fun checkWin(i: Int, j: Int, currentMove: CellValues){
         /* Algorithm is similar to drawAlgorithm:
         from currently clicked cell we are looking forward and backward, in all directions,
         to find same (X or 0) cells, adding those founded to compare to winRow.
@@ -270,7 +295,7 @@ class TicViewModel: ViewModel() {
         changeTurn(uiState.value.currentMove)  // for X or 0
         for (i in uiState.value.gameArray.indices){
             for (j in uiState.value.gameArray[i].indices){
-                if((uiState.value.gameArray[i][j].fieldText == cells.empty) && (!possibleWin)){
+                if((uiState.value.gameArray[i][j].fieldText == CellValues.EMPTY) && (!possibleWin)){
                     drawAlgorithm(i, j, uiState.value.currentMove)
                 }
             }
@@ -278,7 +303,7 @@ class TicViewModel: ViewModel() {
         changeTurn(uiState.value.currentMove)  // for 0 or X
         for (i in uiState.value.gameArray.indices){
             for (j in uiState.value.gameArray[i].indices){
-                if((uiState.value.gameArray[i][j].fieldText == cells.empty) && (!possibleWin)){
+                if((uiState.value.gameArray[i][j].fieldText == CellValues.EMPTY) && (!possibleWin)){
                     drawAlgorithm(i, j, uiState.value.currentMove)
                 }
             }
@@ -296,7 +321,7 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    private fun drawAlgorithm(i: Int, j: Int, currentMove: String){
+    private fun drawAlgorithm(i: Int, j: Int, currentMove: CellValues){
         /* Algorithm is similar to checkWin:
         FOR EVERY cell we are looking forward and backward, in all directions,
         to find same (X or 0) OR EMPTY cells, adding those founded to compare to winRow.
