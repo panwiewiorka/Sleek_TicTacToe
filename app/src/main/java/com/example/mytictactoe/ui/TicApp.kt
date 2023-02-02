@@ -79,96 +79,33 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
             ) {
 
                 //---------------------------button  <
-                Button(
+                CancelButton(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("Cancel Button"),
-                    onClick = { ticViewModel.cancelMove() },
-                    enabled = ticUiState.cancelMoveButtonEnabled,
-                    shape = RoundedCornerShape(15.dp),
-                    border = null,
-                    elevation = null,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0x00000000),
-                        disabledBackgroundColor = Color(0x00000000)
-                    )
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
-                            null,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .alpha(0.33f)
-                                .padding(start = 10.dp)
-                        )
-                        if (ticUiState.cancelMoveButtonEnabled) {
-                            Icon(
-                                painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
-                                "Cancel move",
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .padding(start = 10.dp)
-                                    .testTag("Cancel Icon")
-                            )
-                        }
-                    }
-                }
+                    cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
+                    cancelMove = {ticViewModel.cancelMove()},
+                    paddingStart = 10.dp,
+                )
 
                 //---------------------------icon  XO
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                ) {
-                    val currentMove = if (ticUiState.currentMove == CellValues.X)
-                        painterResource(R.drawable.close_48px)
-                    else painterResource(R.drawable.fiber_manual_record_48px)
-                    val testCurrentMoveString = if (ticUiState.currentMove == CellValues.X)
-                        "currentMove: X" else "currentMove: 0"
-                    Icon(
-                        currentMove,
-                        null,
-                        modifier = Modifier
-                            .size(50.dp)
-                            .padding(top = 8.dp, bottom = 10.dp)
-                            .testTag(testCurrentMoveString)
-                    )
-                }
+                XOButton(
+                    modifier = Modifier.weight(1f),
+                    currentMove = ticUiState.currentMove,
+                    paddingTop = 8.dp,
+                    paddingBottom = 10.dp,
+                )
 
                 //---------------------------button  []
-                Button(
+                MenuButton(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("Menu Button"),
-                    onClick = {
-                        ticViewModel.cancelWinRowChange(false)
-                        ticViewModel.showMenuDialog(!ticUiState.menuDialog)
-                              },
-                    shape = RoundedCornerShape(15.dp),
-                    border = null,
-                    elevation = null,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0x00000000),
-                    )
-                ) {
-                    Box(contentAlignment = Alignment.Center){
-                        Icon(
-                            painterResource(R.drawable.crop_square_48px),
-                            "Menu",
-                            modifier = Modifier.size(30.dp)
-                        )
-//                        Text(text = "${ticUiState.winRow}", fontSize = 18.sp, modifier = Modifier.testTag("winRow square"))
-                        Box(modifier = Modifier.heightIn(1.dp, 32.dp)){
-                            AutoResizedText(
-                                text = "${ticUiState.winRow}",
-                                style = MaterialTheme.typography.body1,
-                                modifier = Modifier.testTag("winRow square"),
-                                widthNotHeight = false
-                            )
-                        }
-                    }
-                }
+                    menuDialog = ticUiState.menuDialog,
+                    winRow = ticUiState.winRow,
+                    cancelWinRowChange = {ticViewModel.cancelWinRowChange(false)},
+                    showMenuDialog = {ticViewModel.showMenuDialog(!ticUiState.menuDialog)},
+                )
             }
         } else {
 
@@ -189,84 +126,36 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
             ) {
 
                 //---------------------------button  []
-                Button(
+                MenuButton(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(bottom = 18.dp),
-                    onClick = {
-                        ticViewModel.cancelWinRowChange(false)
-                        ticViewModel.showMenuDialog(!ticUiState.menuDialog)
-                    },
-                    shape = RoundedCornerShape(15.dp),
-                    border = null,
-                    elevation = null,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0x00000000),
-                    )
-                ) {
-                    Box(contentAlignment = Alignment.Center){
-                        Icon(
-                            painterResource(R.drawable.crop_square_48px),
-                            "Menu",
-                            modifier = Modifier.size(30.dp)
-                        )
-                        Text(text = "${ticUiState.winRow}", fontSize = 18.sp)
-                    }
-                }
+                        .padding(bottom = 18.dp)
+                        .testTag("Menu Button"),
+                    menuDialog = ticUiState.menuDialog,
+                    winRow = ticUiState.winRow,
+                    cancelWinRowChange = {ticViewModel.cancelWinRowChange(false)},
+                    showMenuDialog = {ticViewModel.showMenuDialog(!ticUiState.menuDialog)},
+                )
 
                 //---------------------------icon  XO
-                Box(
-                    contentAlignment = Alignment.Center,
+                XOButton(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(bottom = 24.dp)
-                    ) {
-                    val currentMove = if (ticUiState.currentMove == CellValues.X)
-                        painterResource(R.drawable.close_48px)
-                    else painterResource(R.drawable.fiber_manual_record_48px)
-                    Icon(
-                        currentMove,
-                        null,
-                        modifier = Modifier
-                            .size(47.dp)
-                            .padding(start = 15.dp)
-                    )
-                }
+                        .padding(bottom = 24.dp),
+                    currentMove = ticUiState.currentMove,
+                    paddingStart = 15.dp,
+                )
 
                 //---------------------------button  <
-                Button(
-                    modifier = Modifier.weight(1f),
-                    onClick = { ticViewModel.cancelMove() },
-                    enabled = ticUiState.cancelMoveButtonEnabled,
-                    shape = RoundedCornerShape(15.dp),
-                    border = null,
-                    elevation = null,
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0x00000000),
-                        disabledBackgroundColor = Color(0x00000000)
-                    )
-                ) {
-                    Box(contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(bottom = 34.dp)) {
-                        Icon(
-                            painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
-                            null,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .alpha(0.33f)
-                                .padding(start = 10.dp)
-                        )
-                        if (ticUiState.cancelMoveButtonEnabled) {
-                            Icon(
-                                painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
-                                "Cancel move",
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .padding(start = 10.dp)
-                            )
-                        }
-                    }
-                }
+                CancelButton(
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("Cancel Button"),
+                    cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
+                    cancelMove = {ticViewModel.cancelMove()},
+                    paddingStart = 10.dp,
+                    paddingBoxBottom = 34.dp,
+                )
             }
         }
     }
@@ -411,6 +300,126 @@ fun MainMenu(
                     text = "START",
                     style = MaterialTheme.typography.button,
                     widthNotHeight = true
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun CancelButton(
+    modifier: Modifier,
+    cancelMoveButtonEnabled: Boolean,
+    cancelMove: () -> Unit,
+    //paddingTop: Dp = 0.dp,
+    //paddingBottom: Dp = 0.dp,
+    paddingStart: Dp = 0.dp,
+    //paddingEnd: Dp = 0.dp,
+    paddingBoxBottom: Dp = 0.dp,
+){
+    Button(
+        modifier = modifier,
+        onClick = { cancelMove() },
+        enabled = cancelMoveButtonEnabled,
+        shape = RoundedCornerShape(15.dp),
+        border = null,
+        elevation = null,
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = Color(0x00000000),
+            disabledBackgroundColor = Color(0x00000000)
+        )
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(bottom = paddingBoxBottom)
+        ) {
+            Icon(
+                painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
+                null,
+                modifier = Modifier
+                    .size(32.dp)
+                    .alpha(0.33f)
+                    .padding(start = paddingStart)
+            )
+            if (cancelMoveButtonEnabled) {
+                Icon(
+                    painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
+                    "Cancel move",
+                    modifier = Modifier
+                        .size(32.dp)
+                        .padding(start = paddingStart)
+                        .testTag("Cancel Icon")
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun XOButton(
+    modifier: Modifier,
+    currentMove: CellValues,
+    paddingTop: Dp = 0.dp,
+    paddingBottom: Dp = 0.dp,
+    paddingStart: Dp = 0.dp,
+    paddingEnd: Dp = 0.dp,
+){
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
+        val currentMoveIcon = if (currentMove == CellValues.X)
+            painterResource(R.drawable.close_48px)
+        else painterResource(R.drawable.fiber_manual_record_48px)
+        val testCurrentMoveString = if (currentMove == CellValues.X)
+            "currentMove: X" else "currentMove: 0"
+        Icon(
+            currentMoveIcon,
+            null,
+            modifier = Modifier
+                .size(50.dp)
+                .padding(top = paddingTop, bottom = paddingBottom, start = paddingStart, end = paddingEnd)
+                .testTag(testCurrentMoveString)
+        )
+    }
+}
+
+
+@Composable
+fun MenuButton(
+    modifier: Modifier,
+    menuDialog: Boolean,
+    winRow: Int,
+    cancelWinRowChange: (Boolean) -> Unit,
+    showMenuDialog: (Boolean) -> Unit,
+){
+    Button(
+        modifier = modifier,
+        onClick = {
+            cancelWinRowChange(false)
+            showMenuDialog(!menuDialog)
+        },
+        shape = RoundedCornerShape(15.dp),
+        border = null,
+        elevation = null,
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = Color(0x00000000),
+        )
+    ) {
+        Box(contentAlignment = Alignment.Center){
+            Icon(
+                painterResource(R.drawable.crop_square_48px),
+                "Menu",
+                modifier = Modifier.size(30.dp)
+            )
+            Box(modifier = Modifier.heightIn(1.dp, 32.dp)){
+                AutoResizedText(
+                    text = "$winRow",
+                    style = MaterialTheme.typography.body1,
+                    modifier = Modifier.testTag("winRow square"),
+                    widthNotHeight = false
                 )
             }
         }
