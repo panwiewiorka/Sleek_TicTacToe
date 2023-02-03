@@ -1,14 +1,14 @@
 package com.example.mytictactoe.ui
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import com.example.mytictactoe.CellColors
-import com.example.mytictactoe.CellValues
-import com.example.mytictactoe.Field
+import com.example.mytictactoe.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import com.example.mytictactoe.LoadOrSave.*
 
 class TicViewModel: ViewModel() {
 
@@ -19,32 +19,28 @@ class TicViewModel: ViewModel() {
     private var jOneMoveBefore: Int = 0
     private var iTwoMovesBefore: Int = 0
     private var jTwoMovesBefore: Int = 0
-    private var cellsLeft: Int = 0
-    private var possibleWin: Boolean = false
+    private var freeCellsLeft: Int = 0
+    private var winIsImpossible: Boolean = true
 
-    fun loadSettingsFromUiState(yesNo: Boolean){
+
+    //--------INTERFACE
+
+    fun showMenu(show: Boolean){
+        if(show) setMenuSettings(LOAD) else setMenuSettings(SAVE)
         _uiState.update { currentState ->
-            currentState.copy(memorySettings = yesNo)
+            currentState.copy(menuIsVisible = show)
         }
     }
 
-    fun rememberSettingsDuringOrientationChange(yesNo: Boolean){
-        if(yesNo != uiState.value.landscapeMode) {
-            loadSettingsFromUiState(true)
-            _uiState.update { currentState ->
-                currentState.copy(landscapeMode = yesNo)
-            }
+    fun updateFieldSize(fieldSize: Dp){
+        _uiState.update { a ->
+            a.copy(
+                fieldSize = fieldSize
+            )
         }
     }
 
-    fun showMenuDialog(yesNo: Boolean){
-        loadSettingsFromUiState(yesNo)
-        _uiState.update { currentState ->
-            currentState.copy(menuDialog = yesNo)
-        }
-    }
-
-    fun setSize(slider: Float){
+    fun setFieldSize(slider: Float){
         // rounding to the nearest int, not necessarily to the lowest
         val size = (slider + 0.5).toInt()
 
@@ -55,21 +51,47 @@ class TicViewModel: ViewModel() {
     }
 
     private fun setCellFontSize(gameFieldSize: Int) {
-        // trying to change font size via setCellFontSize(),
-        // without unnecessary recomposition (available by AutoResizedText() composable)
-        val fontReSize = when(gameFieldSize){
-            3 -> 68.sp
-            4 -> 60.sp
-            5 -> 52.sp
-            6 -> 44.sp
-            7 -> 36.sp
-            8 -> 28.sp
-            else -> 68.sp
-        }
+        // changing cellFontSize depending on gameFieldSize
+        // before unnecessary recomposition possible by AutoResizedText() composable
         _uiState.update { a ->
             a.copy(
-                cellFontSize = fontReSize
+                cellFontSize = (62 - (6 * (gameFieldSize - 3))).sp
             )
+        }
+    }
+
+    fun resetGame(size: Int){
+        setCellFontSize(size)
+        val gameArray = Array(size) { Array(size) { Cell(
+            isClickable = true,
+            cellText = CellValues.EMPTY,
+            cellColor = CellColors.STANDART,
+        ) } }
+        _uiState.update { currentState ->
+            currentState.copy(
+                gameOverScreenVisible = false,
+                cancelMoveButtonEnabled = false,
+                gameArray = gameArray,
+                currentMove = CellValues.X,
+            )
+        }
+        freeCellsLeft = size * size
+    }
+
+    //---------SETTINGS
+
+    fun setMenuSettings(loadOrSave: LoadOrSave){
+        _uiState.update { currentState ->
+            currentState.copy(memorySettings = loadOrSave)
+        }
+    }
+
+    fun rememberSettingsDuringOrientationChange(orientation: Orientation){
+        if(orientation != uiState.value.orientation) {
+            setMenuSettings(LOAD)
+            _uiState.update { currentState ->
+                currentState.copy(orientation = orientation)
+            }
         }
     }
 
@@ -85,39 +107,25 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    fun cancelWinRowChange(loadWinRow: Boolean){
-        if(!loadWinRow) {
-            _uiState.update { a ->
-                a.copy(savedWinRow = uiState.value.winRow)
-            }
-        } else if(cellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size)) {
+    fun saveWinRow(){
+        _uiState.update { a ->
+            a.copy(savedWinRow = uiState.value.winRow)
+        }
+    }
+
+    fun cancelWinRowChangesDuringTheGame(){
+        if(freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size)) {
             _uiState.update { a ->
                 a.copy(winRow = uiState.value.savedWinRow)
             }
         }
     }
 
-    fun resetGame(size: Int){
-        setCellFontSize(size)
-        val gameArray = Array(size) { Array(size) { Field(
-            isClickable = true,
-            fieldText = CellValues.EMPTY,
-            textColor = CellColors.STANDART,
-        ) } }
-        _uiState.update { currentState ->
-            currentState.copy(
-                lastClickScreen = false,
-                cancelMoveButtonEnabled = false,
-                gameArray = gameArray,
-                currentMove = CellValues.X,
-            )
-        }
-        cellsLeft = size * size
-    }
+    //----------GAMEPlAY
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
-        if(cellsLeft == (gameArray.size * gameArray.size)){
+        if(freeCellsLeft == (gameArray.size * gameArray.size)){
             iOneMoveBefore = 0
             jOneMoveBefore = 0
             iTwoMovesBefore = 0
@@ -126,23 +134,23 @@ class TicViewModel: ViewModel() {
         //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
-        gameArray[iOneMoveBefore][jOneMoveBefore].textColor = CellColors.STANDART
-        gameArray[i][j].textColor = CellColors.CURRENT
-        gameArray[i][j].fieldText = uiState.value.currentMove
+        gameArray[iOneMoveBefore][jOneMoveBefore].cellColor = CellColors.STANDART
+        gameArray[i][j].cellColor = CellColors.CURRENT
+        gameArray[i][j].cellText = uiState.value.currentMove
         gameArray[i][j].isClickable = false
-        _uiState.update { currentState ->
-            currentState.copy(
+        _uiState.update { a ->
+            a.copy(
                 gameArray = gameArray,
                 cancelMoveButtonEnabled = true
             )
         }
         iOneMoveBefore = i
         jOneMoveBefore = j
-        cellsLeft--
+        freeCellsLeft--
         checkWin(i, j, uiState.value.currentMove)
-        if(!uiState.value.lastClickScreen) {
+        if(!uiState.value.gameOverScreenVisible) {
             checkDraw()
-            if(!uiState.value.lastClickScreen) {
+            if(!uiState.value.gameOverScreenVisible) {
                 changeTurn(uiState.value.currentMove)
             }
         }
@@ -150,19 +158,19 @@ class TicViewModel: ViewModel() {
 
     fun cancelMove(){
         val gameArray = uiState.value.gameArray
-        if(uiState.value.lastClickScreen){
+        if(uiState.value.gameOverScreenVisible){
             for(i in gameArray.indices) {
                 for(j in gameArray.indices) {
-                    gameArray[i][j].textColor = CellColors.STANDART
+                    gameArray[i][j].cellColor = CellColors.STANDART
                 }
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = false)
+                currentState.copy(gameOverScreenVisible = false)
             }
         } else changeTurn(uiState.value.currentMove)
-        gameArray[iOneMoveBefore][jOneMoveBefore].fieldText = CellValues.EMPTY
+        gameArray[iOneMoveBefore][jOneMoveBefore].cellText = CellValues.EMPTY
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
-        gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = CellColors.CURRENT
+        gameArray[iTwoMovesBefore][jTwoMovesBefore].cellColor = CellColors.CURRENT
         _uiState.update { currentState ->
             currentState.copy(
                 gameArray = gameArray,
@@ -171,7 +179,7 @@ class TicViewModel: ViewModel() {
         }
         iOneMoveBefore = iTwoMovesBefore
         jOneMoveBefore = jTwoMovesBefore
-        cellsLeft++
+        freeCellsLeft++
     }
 
     private fun changeTurn(currentMove: CellValues){
@@ -190,133 +198,136 @@ class TicViewModel: ViewModel() {
         we have to make sure that AT LEAST ONE of the four directions can win (HAVE enough X or 0 in a row)
          */
 
+        val gameArray = uiState.value.gameArray
+
         // VERTICAL CHECK forward
-        var n = i
+        var newI = i
         var currentRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][j].fieldText == currentMove)){
+        while((newI + 1 < gameArray.size) && (gameArray[newI + 1][j].cellText == currentMove)){
             currentRow++
-            n++
+            newI++
         }
         // then backward
-        n = i
-        while((n > 0) && (uiState.value.gameArray[n - 1][j].fieldText == currentMove)){
+        newI = i
+        while((newI > 0) && (gameArray[newI - 1][j].cellText == currentMove)){
             currentRow++
-            n--
+            newI--
         }
         // if enough X or 0 in a row -> WIN
         if (currentRow >= uiState.value.winRow) {
-            for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][j].textColor = CellColors.WIN
+            for(a in newI until newI + currentRow) {
+                gameArray[a][j].cellColor = CellColors.WIN
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
+                currentState.copy(gameOverScreenVisible = true)
             }
         }
 
         // HORIZONTAL CHECK
-        var m = j
+        var newJ = j
         currentRow = 1
 
-        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[i][m + 1].fieldText == currentMove)){
+        while((newJ + 1 < gameArray.size) && (gameArray[i][newJ + 1].cellText == currentMove)){
             currentRow++
-            m++
+            newJ++
         }
-        m = j
-        while((m > 0) && (uiState.value.gameArray[i][m - 1].fieldText == currentMove)){
+        newJ = j
+        while((newJ > 0) && (gameArray[i][newJ - 1].cellText == currentMove)){
             currentRow++
-            m--
+            newJ--
         }
         if (currentRow >= uiState.value.winRow) {
-            for(a in m until m+currentRow) {
-                uiState.value.gameArray[i][a].textColor = CellColors.WIN
+            for(a in newJ until newJ + currentRow) {
+                gameArray[i][a].cellColor = CellColors.WIN
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
+                currentState.copy(gameOverScreenVisible = true)
             }
         }
 
         // MAIN DIAGONAL CHECK
-        n = i
-        m = j
+        newI = i
+        newJ = j
         currentRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][m + 1].fieldText == currentMove)){
+        while((newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) && (gameArray[newI + 1][newJ + 1].cellText == currentMove)){
             currentRow++
-            n++
-            m++
+            newI++
+            newJ++
         }
-        n = i
-        m = j
-        while((n > 0) && (m > 0) && (uiState.value.gameArray[n - 1][m - 1].fieldText == currentMove)){
+        newI = i
+        newJ = j
+        while((newI > 0) && (newJ > 0) && (gameArray[newI - 1][newJ - 1].cellText == currentMove)){
             currentRow++
-            n--
-            m--
+            newI--
+            newJ--
         }
         if (currentRow >= uiState.value.winRow) {
-            for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][a-n+m].textColor = CellColors.WIN
+            for(a in newI until newI + currentRow) {
+                gameArray[a][a-newI+newJ].cellColor = CellColors.WIN
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
+                currentState.copy(gameOverScreenVisible = true)
             }
         }
 
         // OTHER DIAGONAL CHECK
-        n = i
-        m = j
+        newI = i
+        newJ = j
         currentRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (m > 0) && (uiState.value.gameArray[n + 1][m - 1].fieldText == currentMove)){
+        while((newI + 1 < gameArray.size) && (newJ > 0) && (gameArray[newI + 1][newJ - 1].cellText == currentMove)){
             currentRow++
-            n++
-            m--
+            newI++
+            newJ--
         }
-        n = i
-        m = j
-        while((n > 0) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n - 1][m + 1].fieldText == currentMove)){
+        newI = i
+        newJ = j
+        while((newI > 0) && (newJ + 1 < gameArray.size) && (gameArray[newI - 1][newJ + 1].cellText == currentMove)){
             currentRow++
-            n--
-            m++
+            newI--
+            newJ++
         }
         if (currentRow >= uiState.value.winRow) {
-            for(a in n until n+currentRow) {
-                uiState.value.gameArray[a][m-a+n].textColor = CellColors.WIN
+            for(a in newI until newI + currentRow) {
+                gameArray[a][newJ-a+newI].cellColor = CellColors.WIN
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
+                currentState.copy(gameOverScreenVisible = true)
             }
         }
     }
 
     private fun checkDraw(){
-        possibleWin = false
+        winIsImpossible = true
+        val gameArray = uiState.value.gameArray
         // checking whether any of the free remaining cells can possibly win
         changeTurn(uiState.value.currentMove)  // for X or 0
-        for (i in uiState.value.gameArray.indices){
-            for (j in uiState.value.gameArray[i].indices){
-                if((uiState.value.gameArray[i][j].fieldText == CellValues.EMPTY) && (!possibleWin)){
+        for (i in gameArray.indices){
+            for (j in gameArray[i].indices){
+                if((gameArray[i][j].cellText == CellValues.EMPTY) && winIsImpossible){
                     drawAlgorithm(i, j, uiState.value.currentMove)
                 }
             }
         }
         changeTurn(uiState.value.currentMove)  // for 0 or X
-        for (i in uiState.value.gameArray.indices){
-            for (j in uiState.value.gameArray[i].indices){
-                if((uiState.value.gameArray[i][j].fieldText == CellValues.EMPTY) && (!possibleWin)){
+        for (i in gameArray.indices){
+            for (j in gameArray[i].indices){
+                if((gameArray[i][j].cellText == CellValues.EMPTY) && winIsImpossible){
                     drawAlgorithm(i, j, uiState.value.currentMove)
                 }
             }
         }
         // if there are no such cells -> Draw
-        if(!possibleWin) {
-            for(i in uiState.value.gameArray.indices) {
-                for(j in uiState.value.gameArray.indices) {
-                    uiState.value.gameArray[i][j].textColor = CellColors.DRAW
+        if(winIsImpossible) {
+            for(i in gameArray.indices) {
+                for(j in gameArray.indices) {
+                    gameArray[i][j].cellColor = CellColors.DRAW
                 }
             }
             _uiState.update { currentState ->
-                currentState.copy(lastClickScreen = true)
+                currentState.copy(gameOverScreenVisible = true)
             }
         }
     }
@@ -329,85 +340,87 @@ class TicViewModel: ViewModel() {
         Then, if any cell could possibly win - there's no Draw
          */
 
+        val gameArray = uiState.value.gameArray
+
         // VERTICAL CHECK forward
-        var n = i
+        var newI = i
         var currentRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][j].fieldText != currentMove)){
+        while((newI + 1 < gameArray.size) && (gameArray[newI + 1][j].cellText != currentMove)){
             currentRow++
-            n++
+            newI++
         }
         // then backward
-        n = i
-        while((n > 0) && (uiState.value.gameArray[n - 1][j].fieldText != currentMove)){
+        newI = i
+        while((newI > 0) && (gameArray[newI - 1][j].cellText != currentMove)){
             currentRow++
-            n--
+            newI--
         }
         // if enough ((X or 0) + " ") in a row -> possible Win (no Draw)
         if (currentRow >= uiState.value.winRow) {
-            possibleWin = true
+            winIsImpossible = false
             return
         }
 
         // HORIZONTAL CHECK
-        var m = j
+        var newJ = j
         currentRow = 1
 
-        while((m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[i][m + 1].fieldText != currentMove)){
+        while((newJ + 1 < gameArray.size) && (gameArray[i][newJ + 1].cellText != currentMove)){
             currentRow++
-            m++
+            newJ++
         }
-        m = j
-        while((m > 0) && (uiState.value.gameArray[i][m - 1].fieldText != currentMove)){
+        newJ = j
+        while((newJ > 0) && (gameArray[i][newJ - 1].cellText != currentMove)){
             currentRow++
-            m--
+            newJ--
         }
         if (currentRow >= uiState.value.winRow) {
-            possibleWin = true
+            winIsImpossible = false
             return
         }
 
         // MAIN DIAGONAL CHECK
-        n = i
-        m = j
+        newI = i
+        newJ = j
         currentRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n + 1][m + 1].fieldText != currentMove)){
+        while((newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) && (gameArray[newI + 1][newJ + 1].cellText != currentMove)){
             currentRow++
-            n++
-            m++
+            newI++
+            newJ++
         }
-        n = i
-        m = j
-        while((n > 0) && (m > 0) && (uiState.value.gameArray[n - 1][m - 1].fieldText != currentMove)){
+        newI = i
+        newJ = j
+        while((newI > 0) && (newJ > 0) && (gameArray[newI - 1][newJ - 1].cellText != currentMove)){
             currentRow++
-            n--
-            m--
+            newI--
+            newJ--
         }
         if (currentRow >= uiState.value.winRow) {
-            possibleWin = true
+            winIsImpossible = false
             return
         }
 
         // OTHER DIAGONAL CHECK
-        n = i
-        m = j
+        newI = i
+        newJ = j
         currentRow = 1
 
-        while((n + 1 < uiState.value.gameArray.size) && (m > 0) && (uiState.value.gameArray[n + 1][m - 1].fieldText != currentMove)){
+        while((newI + 1 < gameArray.size) && (newJ > 0) && (gameArray[newI + 1][newJ - 1].cellText != currentMove)){
             currentRow++
-            n++
-            m--
+            newI++
+            newJ--
         }
-        n = i
-        m = j
-        while((n > 0) && (m + 1 < uiState.value.gameArray.size) && (uiState.value.gameArray[n - 1][m + 1].fieldText != currentMove)){
+        newI = i
+        newJ = j
+        while((newI > 0) && (newJ + 1 < gameArray.size) && (gameArray[newI - 1][newJ + 1].cellText != currentMove)){
             currentRow++
-            n--
-            m++
+            newI--
+            newJ++
         }
         if (currentRow >= uiState.value.winRow) {
-            possibleWin = true
+            winIsImpossible = false
             return
         }
     }

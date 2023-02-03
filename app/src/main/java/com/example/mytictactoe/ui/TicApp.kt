@@ -21,8 +21,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mytictactoe.AutoResizeLimit
+import com.example.mytictactoe.AutoResizeLimit.*
 import com.example.mytictactoe.CellValues
-import com.example.mytictactoe.Field
+import com.example.mytictactoe.Cell
+import com.example.mytictactoe.LoadOrSave.*
+import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 import com.example.mytictactoe.ui.theme.menuBorder
@@ -32,17 +36,17 @@ import com.example.mytictactoe.ui.theme.menuBorder
 fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
     val ticUiState by ticViewModel.uiState.collectAsState()
 
-    //----------------------------POPUP MENU SCREEN
-    if (ticUiState.menuDialog){
+    //----------------------------popup MENU SCREEN
+    if (ticUiState.menuIsVisible){
         AlertDialog(
             onDismissRequest = {
-                ticViewModel.showMenuDialog(false)
-                ticViewModel.cancelWinRowChange(true) },
+                ticViewModel.showMenu(false)
+                ticViewModel.cancelWinRowChangesDuringTheGame() },
             buttons = {
                 MainMenu (
                     size = ticUiState.gameArray.size,
                     winRow = ticUiState.winRow,
-                    memorySettings = ticUiState.memorySettings,
+                    loadMemorySettings = ticUiState.memorySettings.loadOrSave,
                 )
             },
             shape = RoundedCornerShape(15.dp),
@@ -50,7 +54,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 .testTag("Menu Window")
                 .widthIn(220.dp, 300.dp)
                 .border(
-                    3.dp,
+                    width = 3.dp,
                     color = MaterialTheme.colors.menuBorder,
                     shape = RoundedCornerShape(15.dp)
                 ),
@@ -59,15 +63,17 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 
     //-------------------------------------MAIN SCREEN
     BoxWithConstraints(contentAlignment = Alignment.Center) {
-        ticViewModel.rememberSettingsDuringOrientationChange(maxWidth > maxHeight)
-        if(!ticUiState.landscapeMode) {
+        val orientation = if(maxWidth > maxHeight) LANDSCAPE else PORTRAIT
+        ticViewModel.rememberSettingsDuringOrientationChange(orientation)
+
+        if(orientation == PORTRAIT) {
 
             GameField(
                 vertPadding = 50.dp,
                 horPadding = 0.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
-                lastClickScreen = ticUiState.lastClickScreen
+                gameOverScreenVisible = ticUiState.gameOverScreenVisible,
             )
 
             //-----------------------VERTICAL LAYOUT: TOP BAR with ICONS
@@ -101,10 +107,10 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     modifier = Modifier
                         .weight(1f)
                         .testTag("Menu Button"),
-                    menuDialog = ticUiState.menuDialog,
+                    menuIsVisible = ticUiState.menuIsVisible,
                     winRow = ticUiState.winRow,
-                    cancelWinRowChange = {ticViewModel.cancelWinRowChange(false)},
-                    showMenuDialog = {ticViewModel.showMenuDialog(!ticUiState.menuDialog)},
+                    saveWinRow = {ticViewModel.saveWinRow()},
+                    showMenuDialog = {ticViewModel.showMenu(!ticUiState.menuIsVisible)},
                 )
             }
         } else {
@@ -114,7 +120,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 horPadding = 50.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
-                lastClickScreen = ticUiState.lastClickScreen
+                gameOverScreenVisible = ticUiState.gameOverScreenVisible,
             )
 
             //_______________________HORIZONTAL LAYOUT: LEFT BAR with ICONS
@@ -131,10 +137,10 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         .weight(1f)
                         .padding(bottom = 18.dp)
                         .testTag("Menu Button"),
-                    menuDialog = ticUiState.menuDialog,
+                    menuIsVisible = ticUiState.menuIsVisible,
                     winRow = ticUiState.winRow,
-                    cancelWinRowChange = {ticViewModel.cancelWinRowChange(false)},
-                    showMenuDialog = {ticViewModel.showMenuDialog(!ticUiState.menuDialog)},
+                    saveWinRow = {ticViewModel.saveWinRow()},
+                    showMenuDialog = {ticViewModel.showMenu(!ticUiState.menuIsVisible)},
                 )
 
                 //---------------------------icon  XO
@@ -162,12 +168,14 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
 }
 
 
+//****************************************************************************
+
 @Composable
 fun MainMenu(
     ticViewModel: TicViewModel = viewModel(),
     size: Int,
     winRow: Int,
-    memorySettings: Boolean,
+    loadMemorySettings: Boolean,
 ){
     var sizeSliderPosition by remember { mutableStateOf(3f) }
     var winRowSliderPosition by remember { mutableStateOf(3f) }
@@ -175,26 +183,25 @@ fun MainMenu(
     var winRowSteps by remember { mutableStateOf(0) }
     // ^^ by remember { mutableStateOf() }   made for sliders local operation.
     // Settings are saved in UiState.
-    if(memorySettings){
+    if(loadMemorySettings){
         sizeSliderPosition = size.toFloat()
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
         winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
-        ticViewModel.loadSettingsFromUiState(false)
+        ticViewModel.setMenuSettings(SAVE)
     }
     Column(
         modifier = Modifier.padding(25.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        //Text(text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
         Box(
             modifier = Modifier.heightIn(10.dp, 60.dp)
         ){
             AutoResizedText(
                 text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}",
                 style = MaterialTheme.typography.h5,
-                widthNotHeight = false,
+                autoResizeLimit = HEIGHT,
                 modifier = Modifier.testTag("Board Size"),
             )
         }
@@ -202,7 +209,7 @@ fun MainMenu(
             value = sizeSliderPosition,
             onValueChange = {
                 sizeSliderPosition = it
-                ticViewModel.setSize(it) },
+                ticViewModel.setFieldSize(it) },
             valueRange = 3f..8f,
             steps = 4,
             onValueChangeFinished = {
@@ -224,14 +231,13 @@ fun MainMenu(
                 inactiveTrackColor = MaterialTheme.colors.primaryVariant
             )
         )
-        //Text(text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}", fontSize = 28.sp)
         Box(
             modifier = Modifier.heightIn(10.dp, 60.dp)
         ){
             AutoResizedText(
                 text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}",
                 style = MaterialTheme.typography.h5,
-                widthNotHeight = false,
+                autoResizeLimit = HEIGHT,
                 modifier = Modifier.testTag("Win Row"),
             )
         }
@@ -292,14 +298,13 @@ fun MainMenu(
                 modifier = Modifier.widthIn(60.dp, 140.dp),
                 onClick = {
                 ticViewModel.resetGame(size)
-                ticViewModel.showMenuDialog(false)
+                ticViewModel.showMenu(false)
                 ticViewModel.setWinRow(winRowSliderPosition)
             }) {
-                //Text(text = "START", fontSize = 20.sp)
                 AutoResizedText(
                     text = "START",
                     style = MaterialTheme.typography.button,
-                    widthNotHeight = true
+                    autoResizeLimit = WIDTH
                 )
             }
         }
@@ -334,24 +339,16 @@ fun CancelButton(
             contentAlignment = Alignment.Center,
             modifier = Modifier.padding(bottom = paddingBoxBottom)
         ) {
+            val alpha = if (cancelMoveButtonEnabled) 1f else 0.33f
             Icon(
-                painterResource(R.drawable.arrow_back_ios_48px), // background grey "disabled" icon
-                null,
+                painterResource(R.drawable.arrow_back_ios_48px),
+                "Cancel move",
                 modifier = Modifier
                     .size(32.dp)
-                    .alpha(0.33f)
+                    .alpha(alpha)
                     .padding(start = paddingStart)
+                    .testTag("Cancel Icon")
             )
-            if (cancelMoveButtonEnabled) {
-                Icon(
-                    painterResource(R.drawable.arrow_back_ios_48px), // clickable icon
-                    "Cancel move",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .padding(start = paddingStart)
-                        .testTag("Cancel Icon")
-                )
-            }
         }
     }
 }
@@ -373,15 +370,20 @@ fun XOButton(
         val currentMoveIcon = if (currentMove == CellValues.X)
             painterResource(R.drawable.close_48px)
         else painterResource(R.drawable.fiber_manual_record_48px)
-        val testCurrentMoveString = if (currentMove == CellValues.X)
+        val testStringCurrentMove = if (currentMove == CellValues.X)
             "currentMove: X" else "currentMove: 0"
         Icon(
             currentMoveIcon,
             null,
             modifier = Modifier
                 .size(50.dp)
-                .padding(top = paddingTop, bottom = paddingBottom, start = paddingStart, end = paddingEnd)
-                .testTag(testCurrentMoveString)
+                .padding(
+                    top = paddingTop,
+                    bottom = paddingBottom,
+                    start = paddingStart,
+                    end = paddingEnd
+                )
+                .testTag(testStringCurrentMove)
         )
     }
 }
@@ -390,16 +392,16 @@ fun XOButton(
 @Composable
 fun MenuButton(
     modifier: Modifier,
-    menuDialog: Boolean,
+    menuIsVisible: Boolean,
     winRow: Int,
-    cancelWinRowChange: (Boolean) -> Unit,
+    saveWinRow: () -> Unit,
     showMenuDialog: (Boolean) -> Unit,
 ){
     Button(
         modifier = modifier,
         onClick = {
-            cancelWinRowChange(false)
-            showMenuDialog(!menuDialog)
+            saveWinRow()
+            showMenuDialog(!menuIsVisible)
         },
         shape = RoundedCornerShape(15.dp),
         border = null,
@@ -419,7 +421,7 @@ fun MenuButton(
                     text = "$winRow",
                     style = MaterialTheme.typography.body1,
                     modifier = Modifier.testTag("winRow square"),
-                    widthNotHeight = false
+                    autoResizeLimit = HEIGHT
                 )
             }
         }
@@ -433,8 +435,8 @@ fun GameField(
     horPadding: Dp,
     ticViewModel: TicViewModel = viewModel(),
     cellFontSize: TextUnit,
-    gameArray: Array<Array<Field>>,
-    lastClickScreen: Boolean
+    gameArray: Array<Array<Cell>>,
+    gameOverScreenVisible: Boolean,
 ){
     BoxWithConstraints(
         modifier = Modifier.padding(vertical = vertPadding, horizontal = horPadding),
@@ -462,12 +464,12 @@ fun GameField(
                                 .testTag("Cell $i $j")
                         ) {
                             AutoResizedText(
-                                text = gameArray[i][j].fieldText.cellValue,
+                                text = gameArray[i][j].cellText.cellValue,
                                 style = MaterialTheme.typography.h3,
-                                observedChanges = fieldSize / gameArray.size,
+                                changedCellSize = fieldSize / gameArray.size,
                                 fontSize = cellFontSize,
-                                color = gameArray[i][j].textColor.color,
-                                widthNotHeight = false,
+                                color = gameArray[i][j].cellColor.color,
+                                autoResizeLimit = HEIGHT,
                                 modifier = Modifier.testTag("Text $i $j")
                             )
                         }
@@ -475,13 +477,14 @@ fun GameField(
                 }
             }
         }
+        ticViewModel.updateFieldSize(fieldSize)
     }
-    //------------------------LAST SCREEN (win / draw)
-    if (lastClickScreen) {
+    //------------------------GAME OVER SCREEN (win / draw)
+    if (gameOverScreenVisible) {
         Box(modifier = Modifier
             .fillMaxSize()
-            .testTag("Last Screen")
-            .clickable(enabled = true) { ticViewModel.showMenuDialog(true) }) {}
+            .testTag("Game Over Screen")
+            .clickable(enabled = true) { ticViewModel.showMenu(true) }) {}
     }
 }
 
@@ -491,10 +494,10 @@ fun AutoResizedText(
     text: String,
     style: TextStyle,
     modifier: Modifier = Modifier,
-    observedChanges: Dp = 1.dp,
+    changedCellSize: Dp = 1.dp,
     fontSize: TextUnit = style.fontSize,
     color: Color = style.color,
-    widthNotHeight: Boolean,
+    autoResizeLimit: AutoResizeLimit,
 ) {
     var resizedTextStyle by remember {
         mutableStateOf(style)
@@ -507,12 +510,12 @@ fun AutoResizedText(
     }
     // saved + observed implemented to overcome bug:
     // font wasn't changing in first cells when expanding field Size
-    var savedChanges by remember {
+    var savedCellSize by remember {
         mutableStateOf(1.dp)
     }
-    if (savedChanges != observedChanges) {
+    if (savedCellSize != changedCellSize) {
         fontSizeChanged = true
-        savedChanges = observedChanges
+        savedCellSize = changedCellSize
     }
 
     if(fontSizeChanged){
@@ -524,7 +527,7 @@ fun AutoResizedText(
 
     val defaultFontSize = MaterialTheme.typography.body1.fontSize
 
-    if(widthNotHeight){
+    if(autoResizeLimit == WIDTH){
         Text(
             text = text,
             color = color,

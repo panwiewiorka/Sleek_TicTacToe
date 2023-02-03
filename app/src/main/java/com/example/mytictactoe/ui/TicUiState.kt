@@ -1,24 +1,27 @@
 package com.example.mytictactoe.ui
 
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mytictactoe.CellColors
-import com.example.mytictactoe.CellValues
-import com.example.mytictactoe.Field
+import com.example.mytictactoe.*
+import com.example.mytictactoe.LoadOrSave.*
+import com.example.mytictactoe.Orientation.*
 
 data class TicUiState(
-    val landscapeMode: Boolean = false,
-    val memorySettings: Boolean = true,
-    val menuDialog: Boolean = true,
-    val lastClickScreen: Boolean = false,
+    val orientation: Orientation = PORTRAIT,
+    val memorySettings: LoadOrSave = LOAD,
+    val menuIsVisible: Boolean = true,
+    val fieldSize: Dp = 0.dp,
+    val gameOverScreenVisible: Boolean = false,
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
     val currentMove: CellValues = CellValues.X,
     val cancelMoveButtonEnabled: Boolean = false,
     val cellFontSize: TextUnit = 68.sp,
-    val gameArray: Array<Array<Field>> = Array(3) { i -> Array(3) { j -> Field(
+    val gameArray: Array<Array<Cell>> = Array(3) { i -> Array(3) { j -> Cell(
         isClickable = true,
-        fieldText = CellValues.EMPTY,
-        textColor = CellColors.STANDART,
+        cellText = CellValues.EMPTY,
+        cellColor = CellColors.STANDART,
     ) } }
 )

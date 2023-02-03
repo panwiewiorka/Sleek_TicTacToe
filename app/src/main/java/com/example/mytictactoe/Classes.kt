@@ -8,10 +8,10 @@ import com.example.mytictactoe.ui.theme.draw
 import com.example.mytictactoe.ui.theme.win
 
 
-data class Field(
+data class Cell(
     var isClickable: Boolean,
-    var fieldText: CellValues,
-    var textColor: CellColors,
+    var cellText: CellValues,
+    var cellColor: CellColors,
 )
 
 
@@ -39,3 +39,12 @@ enum class CellColors {
             DRAW -> MaterialTheme.colors.draw
         }
 }
+
+enum class LoadOrSave(val loadOrSave: Boolean) {
+    LOAD(true),
+    SAVE(false)
+}
+
+enum class Orientation { PORTRAIT, LANDSCAPE }
+
+enum class AutoResizeLimit { WIDTH, HEIGHT }

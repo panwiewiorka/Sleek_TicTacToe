@@ -119,15 +119,15 @@ class TicUiTests {
     }
 
     @Test
-    fun fillCellsUntilWin_showsLastScreen_AndThenMenu() {
+    fun fillCellsUntilWin_showsGameOverScreen_AndThenMenu() {
         composeTestRule.onNodeWithTag("Cell 0 1").performClick()
         composeTestRule.onNodeWithTag("Cell 1 1").performClick()
         composeTestRule.onNodeWithTag("Cell 0 2").performClick()
         composeTestRule.onNodeWithTag("Cell 1 2").performClick()
-        composeTestRule.onNodeWithTag("Last Screen").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("Game Over Screen").assertDoesNotExist()
         composeTestRule.onNodeWithTag("Cell 0 3").performClick()
-        composeTestRule.onNodeWithTag("Last Screen").assertExists("No Last Screen")
-        composeTestRule.onNodeWithTag("Last Screen").performClick()
+        composeTestRule.onNodeWithTag("Game Over Screen").assertExists("No Game Over Screen")
+        composeTestRule.onNodeWithTag("Game Over Screen").performClick()
         composeTestRule.onNodeWithTag("Menu Window").assertExists("No Menu Window")
     }
 
@@ -141,7 +141,7 @@ class TicUiTests {
         tappingCancel_CellXDisappears_AndCancelDisappears_AndChangesCurrentMoveIconToX()
         tappingMenuAndChangingWinRowTo3AndCancellingMenu_ChecksWinRowCancel()
         secondTappingCell_FillsCell_AndChangesCurrentMoveIconTo0()
-        fillCellsUntilWin_showsLastScreen_AndThenMenu()
+        fillCellsUntilWin_showsGameOverScreen_AndThenMenu()
     }
 
 }
