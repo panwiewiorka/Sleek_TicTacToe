@@ -9,16 +9,16 @@ import com.example.mytictactoe.ui.theme.win
 
 
 data class Cell(
-    var isClickable: Boolean,
-    var cellText: CellValues,
-    var cellColor: CellColors,
+    var cellText: CellValues = CellValues.EMPTY,
+    var isClickable: Boolean = true,
+    var cellColor: CellColors = CellColors.STANDART,
 )
 
 
-enum class CellValues(val cellValue: String){
-    EMPTY(" "),
-    X("X"),
-    O("0")
+enum class CellValues(val cellValue: Char){
+    EMPTY(' '),
+    X('X'),
+    O('0')
 }
 
 

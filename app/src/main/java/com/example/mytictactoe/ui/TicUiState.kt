@@ -12,6 +12,7 @@ data class TicUiState(
     val orientation: Orientation = PORTRAIT,
     val memorySettings: LoadOrSave = LOAD,
     val menuIsVisible: Boolean = true,
+    val playingVsAI: Boolean = false,
     val fieldSize: Dp = 0.dp,
     val gameOverScreenVisible: Boolean = false,
     val winRow: Int = 3,

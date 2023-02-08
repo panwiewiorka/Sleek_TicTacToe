@@ -22,6 +22,7 @@ class TicViewModel: ViewModel() {
     private var freeCellsLeft: Int = 0
     private var winIsImpossible: Boolean = true
 
+    private val bot = Bot()
 
     //--------INTERFACE
 
@@ -76,7 +77,13 @@ class TicViewModel: ViewModel() {
             )
         }
         freeCellsLeft = size * size
+        bot.botCannotWin = true
     }
+
+    //TODO:
+    // cancel AImode change during the game,
+    // cancel Cancel for AI,
+    // cancel PlayerMove while AI thinks
 
     //---------SETTINGS
 
@@ -121,11 +128,21 @@ class TicViewModel: ViewModel() {
         }
     }
 
+    fun switchGameMode(playingVsAI: Boolean){
+        _uiState.update { a ->
+            a.copy(
+                playingVsAI = !playingVsAI
+            )
+        }
+    }
+
     //----------GAMEPlAY
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
         if(freeCellsLeft == (gameArray.size * gameArray.size)){
+            // making sure array coordinates fit within gameField size
+            // that is possibly smaller than in previous game
             iOneMoveBefore = 0
             jOneMoveBefore = 0
             iTwoMovesBefore = 0
@@ -153,6 +170,24 @@ class TicViewModel: ViewModel() {
             if(!uiState.value.gameOverScreenVisible) {
                 changeTurn(uiState.value.currentMove)
             }
+        }
+    }
+
+    fun makeBotMove(){
+        if(uiState.value.playingVsAI && (uiState.value.currentMove == CellValues.O)) {
+
+            val gameArray = uiState.value.gameArray
+            val currentMove = uiState.value.currentMove
+
+            for (i in gameArray.indices){
+                for (j in gameArray[i].indices){
+                    if((gameArray[i][j].cellText == CellValues.EMPTY) && bot.botCannotWin){
+                        bot.checkForWinningMove(i, j, currentMove, gameArray, uiState.value.winRow)
+                    }
+                }
+            }
+            if(bot.botCannotWin) bot.chooseRandomFreeCell(gameArray)
+            makeMove(bot.botI, bot.botJ)
         }
     }
 
@@ -189,7 +224,7 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    private fun checkWin(i: Int, j: Int, currentMove: CellValues){
+    internal fun checkWin(i: Int, j: Int, currentMove: CellValues){
         /* Algorithm is similar to drawAlgorithm:
         from currently clicked cell we are looking forward and backward, in all directions,
         to find same (X or 0) cells, adding those founded to compare to winRow.
@@ -299,7 +334,7 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    private fun checkDraw(){
+    internal fun checkDraw(){
         winIsImpossible = true
         val gameArray = uiState.value.gameArray
         // checking whether any of the free remaining cells can possibly win

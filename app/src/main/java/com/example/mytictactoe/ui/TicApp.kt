@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -21,19 +22,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.mytictactoe.AutoResizeLimit
+import com.example.mytictactoe.*
 import com.example.mytictactoe.AutoResizeLimit.*
-import com.example.mytictactoe.CellValues
-import com.example.mytictactoe.Cell
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 import com.example.mytictactoe.ui.theme.menuBorder
+import kotlinx.coroutines.*
 
 
 @Composable
-fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
+fun TicApp(
+    ticViewModel: TicViewModel = viewModel()
+) {
     val ticUiState by ticViewModel.uiState.collectAsState()
 
     //----------------------------popup MENU SCREEN
@@ -47,6 +49,8 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     size = ticUiState.gameArray.size,
                     winRow = ticUiState.winRow,
                     loadMemorySettings = ticUiState.memorySettings.loadOrSave,
+                    playingVsAI = ticUiState.playingVsAI,
+                    switchGameMode = {ticViewModel.switchGameMode(ticUiState.playingVsAI)},
                 )
             },
             shape = RoundedCornerShape(15.dp),
@@ -76,7 +80,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 gameOverScreenVisible = ticUiState.gameOverScreenVisible,
             )
 
-            //-----------------------VERTICAL LAYOUT: TOP BAR with ICONS
+            //-----------------------VERTICAL LAYOUT: TOP BAR with BUTTONS
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,6 +104,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                     currentMove = ticUiState.currentMove,
                     paddingTop = 8.dp,
                     paddingBottom = 10.dp,
+                    makeBotMove = {ticViewModel.makeBotMove()}
                 )
 
                 //---------------------------button  []
@@ -123,7 +128,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                 gameOverScreenVisible = ticUiState.gameOverScreenVisible,
             )
 
-            //_______________________HORIZONTAL LAYOUT: LEFT BAR with ICONS
+            //_______________________HORIZONTAL LAYOUT: LEFT BAR with BUTTONS
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -150,6 +155,7 @@ fun TicApp( ticViewModel: TicViewModel = viewModel() ) {
                         .padding(bottom = 24.dp),
                     currentMove = ticUiState.currentMove,
                     paddingStart = 15.dp,
+                    makeBotMove = {ticViewModel.makeBotMove()}
                 )
 
                 //---------------------------button  <
@@ -176,6 +182,8 @@ fun MainMenu(
     size: Int,
     winRow: Int,
     loadMemorySettings: Boolean,
+    playingVsAI: Boolean,
+    switchGameMode: (Boolean) -> Unit,
 ){
     var sizeSliderPosition by remember { mutableStateOf(3f) }
     var winRowSliderPosition by remember { mutableStateOf(3f) }
@@ -294,8 +302,33 @@ fun MainMenu(
                     .clickable(true) {},
                 tint = MaterialTheme.colors.primary
             )
+
+            val iconColor = if(playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+            val iconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+            Button(
+                onClick = { switchGameMode(playingVsAI) },
+                modifier = Modifier
+                    .offset((-5).dp, 0.dp)
+                    .size(44.dp)
+                    .padding(0.dp),
+                shape = CircleShape,
+                elevation = null,
+                contentPadding = PaddingValues(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = iconBG,
+                )
+            ) {
+                Icon(
+                    painterResource(R.drawable.outline_smart_toy_black_48),
+                    contentDescription = "Playing vs AI",
+                    modifier = Modifier.size(40.dp),
+                    tint = iconColor,
+                )
+            }
+
             Button(
                 modifier = Modifier.widthIn(60.dp, 140.dp),
+                elevation = null,
                 onClick = {
                 ticViewModel.resetGame(size)
                 ticViewModel.showMenu(false)
@@ -362,6 +395,7 @@ fun XOButton(
     paddingBottom: Dp = 0.dp,
     paddingStart: Dp = 0.dp,
     paddingEnd: Dp = 0.dp,
+    makeBotMove: () -> Unit,
 ){
     Box(
         modifier = modifier,
@@ -384,6 +418,7 @@ fun XOButton(
                     end = paddingEnd
                 )
                 .testTag(testStringCurrentMove)
+                .clickable { makeBotMove() }
         )
     }
 }
@@ -435,6 +470,7 @@ fun GameField(
     horPadding: Dp,
     ticViewModel: TicViewModel = viewModel(),
     cellFontSize: TextUnit,
+
     gameArray: Array<Array<Cell>>,
     gameOverScreenVisible: Boolean,
 ){
@@ -459,12 +495,18 @@ fun GameField(
                                 .background(MaterialTheme.colors.secondary)
                                 .clickable(
                                     enabled = gameArray[i][j].isClickable,
-                                    onClick = { ticViewModel.makeMove(i = i, j = j) }
+                                    onClick = {
+                                        ticViewModel.makeMove(i = i, j = j)
+                                        GlobalScope.launch(Dispatchers.Main) {
+                                            delay(1500L)
+                                            ticViewModel.makeBotMove()
+                                        }
+                                    }
                                 )
                                 .testTag("Cell $i $j")
                         ) {
                             AutoResizedText(
-                                text = gameArray[i][j].cellText.cellValue,
+                                text = gameArray[i][j].cellText.cellValue.toString(),
                                 style = MaterialTheme.typography.h3,
                                 changedCellSize = fieldSize / gameArray.size,
                                 fontSize = cellFontSize,
