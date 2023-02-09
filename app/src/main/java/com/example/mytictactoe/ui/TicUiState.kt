@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.sp
 import com.example.mytictactoe.*
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
+import com.example.mytictactoe.BotOrGameOverScreen.*
 
 data class TicUiState(
     val orientation: Orientation = PORTRAIT,
@@ -14,8 +15,7 @@ data class TicUiState(
     val menuIsVisible: Boolean = true,
     val playingVsAI: Boolean = false,
     val fieldSize: Dp = 0.dp,
-    val botOrGameOverScreenVisible: Boolean = false,
-    val botOrGameOverScreenClickable: Boolean = false,
+    val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
     val currentMove: CellValues = CellValues.X,

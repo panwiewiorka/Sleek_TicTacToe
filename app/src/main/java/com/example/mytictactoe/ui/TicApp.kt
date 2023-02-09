@@ -77,8 +77,7 @@ fun TicApp(
                 horPadding = 0.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
-                botOrGameOverScreenVisible = ticUiState.botOrGameOverScreenVisible,
-                botOrGameOverScreenClickable = ticUiState.botOrGameOverScreenClickable,
+                botOrGameOverScreen = ticUiState.botOrGameOverScreen,
             )
 
             //-----------------------VERTICAL LAYOUT: TOP BAR with BUTTONS
@@ -126,8 +125,7 @@ fun TicApp(
                 horPadding = 50.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
-                botOrGameOverScreenVisible = ticUiState.botOrGameOverScreenVisible,
-                botOrGameOverScreenClickable = ticUiState.botOrGameOverScreenClickable,
+                botOrGameOverScreen = ticUiState.botOrGameOverScreen,
                 )
 
             //_______________________HORIZONTAL LAYOUT: LEFT BAR with BUTTONS
@@ -473,8 +471,7 @@ fun GameField(
     ticViewModel: TicViewModel = viewModel(),
     cellFontSize: TextUnit,
     gameArray: Array<Array<Cell>>,
-    botOrGameOverScreenVisible: Boolean,
-    botOrGameOverScreenClickable: Boolean,
+    botOrGameOverScreen: BotOrGameOverScreen,
 ){
     BoxWithConstraints(
         modifier = Modifier.padding(vertical = vertPadding, horizontal = horPadding),
@@ -531,11 +528,11 @@ fun GameField(
         ticViewModel.updateFieldSize(fieldSize)
     }
     //------------------------BOT or GAME OVER screen (win / draw)
-    if (botOrGameOverScreenVisible) {
+    if (botOrGameOverScreen.state.visible) {
         Box(modifier = Modifier
             .fillMaxSize()
             .testTag("Game Over Screen")
-            .clickable(enabled = botOrGameOverScreenClickable) { ticViewModel.showMenu(true) }) {}
+            .clickable(enabled = botOrGameOverScreen.state.clickable) { ticViewModel.showMenu(true) }) {}
     }
 }
 

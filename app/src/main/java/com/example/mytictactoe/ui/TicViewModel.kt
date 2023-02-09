@@ -113,32 +113,15 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    fun setBotOrGameOverScreen(mode: BotOrGameOverScreen){
-        when(mode){
-            BOT -> {
-                _uiState.update { a ->
-                    a.copy(
-                        botOrGameOverScreenVisible = true,
-                        botOrGameOverScreenClickable = false,
-                    )
+    fun setBotOrGameOverScreen(state: BotOrGameOverScreen){
+        _uiState.update { a ->
+            a.copy(
+                botOrGameOverScreen = when(state){
+                    BOT -> BOT
+                    GAMEOVER -> GAMEOVER
+                    HIDDEN -> HIDDEN
                 }
-            }
-            GAMEOVER -> {
-                _uiState.update { a ->
-                    a.copy(
-                        botOrGameOverScreenVisible = true,
-                        botOrGameOverScreenClickable = true,
-                    )
-                }
-            }
-            HIDDEN -> {
-                _uiState.update { a ->
-                    a.copy(
-                        botOrGameOverScreenVisible = false,
-                        botOrGameOverScreenClickable = false,
-                    )
-                }
-            }
+            )
         }
     }
 
@@ -188,9 +171,9 @@ class TicViewModel: ViewModel() {
         jOneMoveBefore = j
         freeCellsLeft--
         checkWin(i, j, uiState.value.currentMove)
-        if(!uiState.value.botOrGameOverScreenClickable) {
+        if(uiState.value.botOrGameOverScreen != GAMEOVER) {
             checkDraw()
-            if(!uiState.value.botOrGameOverScreenClickable) {
+            if(uiState.value.botOrGameOverScreen != GAMEOVER) {
                 changeTurn(uiState.value.currentMove)
             }
         }
@@ -214,16 +197,14 @@ class TicViewModel: ViewModel() {
                 cancelMoveButtonEnabled = false
             )
         }
-        val botScreen = uiState.value.botOrGameOverScreenVisible && !uiState.value.botOrGameOverScreenClickable
-        if(botScreen){
+        if(uiState.value.botOrGameOverScreen == BOT){
             setBotOrGameOverScreen(HIDDEN)
         }
     }
 
     fun cancelMove(){
         val gameArray = uiState.value.gameArray
-        val gameOverScreen = uiState.value.botOrGameOverScreenVisible && uiState.value.botOrGameOverScreenClickable
-        if(gameOverScreen){
+        if(uiState.value.botOrGameOverScreen == GAMEOVER){
             for(i in gameArray.indices) {
                 for(j in gameArray.indices) {
                     gameArray[i][j].cellColor = CellColors.STANDART

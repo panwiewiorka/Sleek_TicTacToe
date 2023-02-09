@@ -14,13 +14,11 @@ data class Cell(
     var cellColor: CellColors = CellColors.STANDART,
 )
 
-
 enum class CellValues(val cellValue: Char){
     EMPTY(' '),
     X('X'),
     O('0')
 }
-
 
 enum class CellColors {
     STANDART,
@@ -49,4 +47,12 @@ enum class Orientation { PORTRAIT, LANDSCAPE }
 
 enum class AutoResizeLimit { WIDTH, HEIGHT }
 
-enum class BotOrGameOverScreen { BOT, GAMEOVER, HIDDEN }
+data class BotOrGameOverScreenState (
+    var visible: Boolean = false,
+    val clickable: Boolean = false
+        )
+enum class BotOrGameOverScreen(val state: BotOrGameOverScreenState) {
+    BOT(BotOrGameOverScreenState(visible = true, clickable = false)),
+    GAMEOVER(BotOrGameOverScreenState(visible = true, clickable = true)),
+    HIDDEN(BotOrGameOverScreenState(visible = false, clickable = false));
+}
