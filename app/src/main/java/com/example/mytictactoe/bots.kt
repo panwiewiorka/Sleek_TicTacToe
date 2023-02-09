@@ -107,7 +107,7 @@ class Bot {
         chooseCoordinatesIfCanWin(i, j, currentRow, winRow)
     }
 
-    fun chooseCoordinatesIfCanWin(i: Int, j: Int, currentRow: Int, winRow: Int){
+    private fun chooseCoordinatesIfCanWin(i: Int, j: Int, currentRow: Int, winRow: Int){
         if (currentRow >= (winRow - 1)) {
             botI = i
             botJ = j

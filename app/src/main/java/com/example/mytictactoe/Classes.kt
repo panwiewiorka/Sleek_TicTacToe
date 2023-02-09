@@ -48,3 +48,5 @@ enum class LoadOrSave(val loadOrSave: Boolean) {
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
 enum class AutoResizeLimit { WIDTH, HEIGHT }
+
+enum class BotOrGameOverScreen { BOT, GAMEOVER, HIDDEN }

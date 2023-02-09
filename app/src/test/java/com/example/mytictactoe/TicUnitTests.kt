@@ -23,7 +23,7 @@ class TicUnitTests {
         }
         viewModel.checkWin(0, 0, X)
         assertEquals(CellColors.WIN, gameArray[0][0].cellColor)
-        assert(viewModel.uiState.value.gameOverScreenVisible)
+        assert(viewModel.uiState.value.botOrGameOverScreenVisible)
     }
 
     @Test
@@ -34,6 +34,6 @@ class TicUnitTests {
         gameArray[2] = arrayOf(Cell(O), Cell(X), Cell(O))
         viewModel.checkDraw()
         assertEquals(CellColors.DRAW, gameArray[0][0].cellColor)
-        assert(viewModel.uiState.value.gameOverScreenVisible)
+        assert(viewModel.uiState.value.botOrGameOverScreenVisible)
     }
 }

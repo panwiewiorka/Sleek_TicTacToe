@@ -77,7 +77,8 @@ fun TicApp(
                 horPadding = 0.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
-                gameOverScreenVisible = ticUiState.gameOverScreenVisible,
+                botOrGameOverScreenVisible = ticUiState.botOrGameOverScreenVisible,
+                botOrGameOverScreenClickable = ticUiState.botOrGameOverScreenClickable,
             )
 
             //-----------------------VERTICAL LAYOUT: TOP BAR with BUTTONS
@@ -125,8 +126,9 @@ fun TicApp(
                 horPadding = 50.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
-                gameOverScreenVisible = ticUiState.gameOverScreenVisible,
-            )
+                botOrGameOverScreenVisible = ticUiState.botOrGameOverScreenVisible,
+                botOrGameOverScreenClickable = ticUiState.botOrGameOverScreenClickable,
+                )
 
             //_______________________HORIZONTAL LAYOUT: LEFT BAR with BUTTONS
             Column(
@@ -470,9 +472,9 @@ fun GameField(
     horPadding: Dp,
     ticViewModel: TicViewModel = viewModel(),
     cellFontSize: TextUnit,
-
     gameArray: Array<Array<Cell>>,
-    gameOverScreenVisible: Boolean,
+    botOrGameOverScreenVisible: Boolean,
+    botOrGameOverScreenClickable: Boolean,
 ){
     BoxWithConstraints(
         modifier = Modifier.padding(vertical = vertPadding, horizontal = horPadding),
@@ -497,9 +499,13 @@ fun GameField(
                                     enabled = gameArray[i][j].isClickable,
                                     onClick = {
                                         ticViewModel.makeMove(i = i, j = j)
-                                        GlobalScope.launch(Dispatchers.Main) {
-                                            delay(1500L)
-                                            ticViewModel.makeBotMove()
+                                        if(ticViewModel.uiState.value.playingVsAI && (ticViewModel.uiState.value.currentMove == CellValues.O)) {
+                                            GlobalScope.launch(Dispatchers.Main) {
+                                                ticViewModel.setBotOrGameOverScreen(BotOrGameOverScreen.BOT)
+                                                val botWait = (500L..2000L).random()
+                                                delay(botWait)
+                                                ticViewModel.makeBotMove()
+                                            }
                                         }
                                     }
                                 )
@@ -521,12 +527,12 @@ fun GameField(
         }
         ticViewModel.updateFieldSize(fieldSize)
     }
-    //------------------------GAME OVER SCREEN (win / draw)
-    if (gameOverScreenVisible) {
+    //------------------------BOT or GAME OVER screen (win / draw)
+    if (botOrGameOverScreenVisible) {
         Box(modifier = Modifier
             .fillMaxSize()
             .testTag("Game Over Screen")
-            .clickable(enabled = true) { ticViewModel.showMenu(true) }) {}
+            .clickable(enabled = botOrGameOverScreenClickable) { ticViewModel.showMenu(true) }) {}
     }
 }
 

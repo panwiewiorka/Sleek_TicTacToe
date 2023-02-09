@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import com.example.mytictactoe.LoadOrSave.*
+import com.example.mytictactoe.BotOrGameOverScreen.*
 
 class TicViewModel: ViewModel() {
 
@@ -61,29 +62,8 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    fun resetGame(size: Int){
-        setCellFontSize(size)
-        val gameArray = Array(size) { Array(size) { Cell(
-            isClickable = true,
-            cellText = CellValues.EMPTY,
-            cellColor = CellColors.STANDART,
-        ) } }
-        _uiState.update { currentState ->
-            currentState.copy(
-                gameOverScreenVisible = false,
-                cancelMoveButtonEnabled = false,
-                gameArray = gameArray,
-                currentMove = CellValues.X,
-            )
-        }
-        freeCellsLeft = size * size
-        bot.botCannotWin = true
-    }
-
     //TODO:
-    // cancel AImode change during the game,
     // cancel Cancel for AI,
-    // cancel PlayerMove while AI thinks
 
     //---------SETTINGS
 
@@ -136,7 +116,55 @@ class TicViewModel: ViewModel() {
         }
     }
 
+    fun setBotOrGameOverScreen(mode: BotOrGameOverScreen){
+        when(mode){
+            BOT -> {
+                _uiState.update { a ->
+                    a.copy(
+                        botOrGameOverScreenVisible = true,
+                        botOrGameOverScreenClickable = false,
+                    )
+                }
+            }
+            GAMEOVER -> {
+                _uiState.update { a ->
+                    a.copy(
+                        botOrGameOverScreenVisible = true,
+                        botOrGameOverScreenClickable = true,
+                    )
+                }
+            }
+            HIDDEN -> {
+                _uiState.update { a ->
+                    a.copy(
+                        botOrGameOverScreenVisible = false,
+                        botOrGameOverScreenClickable = false,
+                    )
+                }
+            }
+        }
+    }
+
     //----------GAMEPlAY
+
+    fun resetGame(size: Int){
+        setCellFontSize(size)
+        val gameArray = Array(size) { Array(size) { Cell(
+            isClickable = true,
+            cellText = CellValues.EMPTY,
+            cellColor = CellColors.STANDART,
+        ) } }
+        setBotOrGameOverScreen(HIDDEN)
+        _uiState.update { currentState ->
+            currentState.copy(
+                cancelMoveButtonEnabled = false,
+                gameArray = gameArray,
+                currentMove = CellValues.X,
+            )
+        }
+        freeCellsLeft = size * size
+        bot.botCannotWin = true
+    }
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
@@ -147,7 +175,7 @@ class TicViewModel: ViewModel() {
             jOneMoveBefore = 0
             iTwoMovesBefore = 0
             jTwoMovesBefore = 0
-        }
+        } // TODO move IF^ to resetGame
         //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
@@ -165,44 +193,44 @@ class TicViewModel: ViewModel() {
         jOneMoveBefore = j
         freeCellsLeft--
         checkWin(i, j, uiState.value.currentMove)
-        if(!uiState.value.gameOverScreenVisible) {
+        if(!uiState.value.botOrGameOverScreenClickable) {
             checkDraw()
-            if(!uiState.value.gameOverScreenVisible) {
+            if(!uiState.value.botOrGameOverScreenClickable) {
                 changeTurn(uiState.value.currentMove)
             }
         }
     }
 
     fun makeBotMove(){
-        if(uiState.value.playingVsAI && (uiState.value.currentMove == CellValues.O)) {
+        val gameArray = uiState.value.gameArray
+        val currentMove = uiState.value.currentMove
 
-            val gameArray = uiState.value.gameArray
-            val currentMove = uiState.value.currentMove
-
-            for (i in gameArray.indices){
-                for (j in gameArray[i].indices){
-                    if((gameArray[i][j].cellText == CellValues.EMPTY) && bot.botCannotWin){
-                        bot.checkForWinningMove(i, j, currentMove, gameArray, uiState.value.winRow)
-                    }
+        for (i in gameArray.indices){
+            for (j in gameArray[i].indices){
+                if((gameArray[i][j].cellText == CellValues.EMPTY) && bot.botCannotWin){
+                    bot.checkForWinningMove(i, j, currentMove, gameArray, uiState.value.winRow)
                 }
             }
-            if(bot.botCannotWin) bot.chooseRandomFreeCell(gameArray)
-            makeMove(bot.botI, bot.botJ)
+        }
+        if(bot.botCannotWin) bot.chooseRandomFreeCell(gameArray)
+        makeMove(bot.botI, bot.botJ)
+        val botScreen = uiState.value.botOrGameOverScreenVisible && !uiState.value.botOrGameOverScreenClickable
+        if(botScreen){
+            setBotOrGameOverScreen(HIDDEN)
         }
     }
 
     fun cancelMove(){
         val gameArray = uiState.value.gameArray
-        if(uiState.value.gameOverScreenVisible){
+        val gameOverScreen = uiState.value.botOrGameOverScreenVisible && uiState.value.botOrGameOverScreenClickable
+        if(gameOverScreen){
             for(i in gameArray.indices) {
                 for(j in gameArray.indices) {
                     gameArray[i][j].cellColor = CellColors.STANDART
                 }
             }
-            _uiState.update { currentState ->
-                currentState.copy(gameOverScreenVisible = false)
-            }
-        } else changeTurn(uiState.value.currentMove)
+            setBotOrGameOverScreen(HIDDEN)
+        } else changeTurn(uiState.value.currentMove) // TODO setBotOrGameOverScreen ???
         gameArray[iOneMoveBefore][jOneMoveBefore].cellText = CellValues.EMPTY
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].cellColor = CellColors.CURRENT
@@ -254,9 +282,7 @@ class TicViewModel: ViewModel() {
             for(a in newI until newI + currentRow) {
                 gameArray[a][j].cellColor = CellColors.WIN
             }
-            _uiState.update { currentState ->
-                currentState.copy(gameOverScreenVisible = true)
-            }
+            setBotOrGameOverScreen(GAMEOVER)
         }
 
         // HORIZONTAL CHECK
@@ -276,9 +302,7 @@ class TicViewModel: ViewModel() {
             for(a in newJ until newJ + currentRow) {
                 gameArray[i][a].cellColor = CellColors.WIN
             }
-            _uiState.update { currentState ->
-                currentState.copy(gameOverScreenVisible = true)
-            }
+            setBotOrGameOverScreen(GAMEOVER)
         }
 
         // MAIN DIAGONAL CHECK
@@ -302,9 +326,7 @@ class TicViewModel: ViewModel() {
             for(a in newI until newI + currentRow) {
                 gameArray[a][a-newI+newJ].cellColor = CellColors.WIN
             }
-            _uiState.update { currentState ->
-                currentState.copy(gameOverScreenVisible = true)
-            }
+            setBotOrGameOverScreen(GAMEOVER)
         }
 
         // OTHER DIAGONAL CHECK
@@ -328,9 +350,7 @@ class TicViewModel: ViewModel() {
             for(a in newI until newI + currentRow) {
                 gameArray[a][newJ-a+newI].cellColor = CellColors.WIN
             }
-            _uiState.update { currentState ->
-                currentState.copy(gameOverScreenVisible = true)
-            }
+            setBotOrGameOverScreen(GAMEOVER)
         }
     }
 
@@ -361,9 +381,7 @@ class TicViewModel: ViewModel() {
                     gameArray[i][j].cellColor = CellColors.DRAW
                 }
             }
-            _uiState.update { currentState ->
-                currentState.copy(gameOverScreenVisible = true)
-            }
+            setBotOrGameOverScreen(GAMEOVER)
         }
     }
 
