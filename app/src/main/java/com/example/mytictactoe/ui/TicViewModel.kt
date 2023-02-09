@@ -62,9 +62,6 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    //TODO:
-    // cancel Cancel for AI,
-
     //---------SETTINGS
 
     fun setMenuSettings(loadOrSave: LoadOrSave){
@@ -164,18 +161,16 @@ class TicViewModel: ViewModel() {
         }
         freeCellsLeft = size * size
         bot.botCannotWin = true
+        // making sure array coordinates fit within gameField size
+        // that is possibly smaller than in previous game vvv
+        iOneMoveBefore = 0
+        jOneMoveBefore = 0
+        iTwoMovesBefore = 0
+        jTwoMovesBefore = 0
     }
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
-        if(freeCellsLeft == (gameArray.size * gameArray.size)){
-            // making sure array coordinates fit within gameField size
-            // that is possibly smaller than in previous game
-            iOneMoveBefore = 0
-            jOneMoveBefore = 0
-            iTwoMovesBefore = 0
-            jTwoMovesBefore = 0
-        } // TODO move IF^ to resetGame
         //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
@@ -214,6 +209,11 @@ class TicViewModel: ViewModel() {
         }
         if(bot.botCannotWin) bot.chooseRandomFreeCell(gameArray)
         makeMove(bot.botI, bot.botJ)
+        _uiState.update { currentState ->
+            currentState.copy(
+                cancelMoveButtonEnabled = false
+            )
+        }
         val botScreen = uiState.value.botOrGameOverScreenVisible && !uiState.value.botOrGameOverScreenClickable
         if(botScreen){
             setBotOrGameOverScreen(HIDDEN)
@@ -229,8 +229,7 @@ class TicViewModel: ViewModel() {
                     gameArray[i][j].cellColor = CellColors.STANDART
                 }
             }
-            setBotOrGameOverScreen(HIDDEN)
-        } else changeTurn(uiState.value.currentMove) // TODO setBotOrGameOverScreen ???
+        } else changeTurn(uiState.value.currentMove)
         gameArray[iOneMoveBefore][jOneMoveBefore].cellText = CellValues.EMPTY
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].cellColor = CellColors.CURRENT
@@ -243,6 +242,7 @@ class TicViewModel: ViewModel() {
         iOneMoveBefore = iTwoMovesBefore
         jOneMoveBefore = jTwoMovesBefore
         freeCellsLeft++
+        setBotOrGameOverScreen(HIDDEN)
     }
 
     private fun changeTurn(currentMove: CellValues){

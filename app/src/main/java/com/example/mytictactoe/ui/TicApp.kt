@@ -500,11 +500,14 @@ fun GameField(
                                     onClick = {
                                         ticViewModel.makeMove(i = i, j = j)
                                         if(ticViewModel.uiState.value.playingVsAI && (ticViewModel.uiState.value.currentMove == CellValues.O)) {
+                                            val currentMove = ticViewModel.uiState.value.currentMove
                                             GlobalScope.launch(Dispatchers.Main) {
                                                 ticViewModel.setBotOrGameOverScreen(BotOrGameOverScreen.BOT)
                                                 val botWait = (500L..2000L).random()
                                                 delay(botWait)
-                                                ticViewModel.makeBotMove()
+                                                if(currentMove == ticViewModel.uiState.value.currentMove) {
+                                                    ticViewModel.makeBotMove()
+                                                }
                                             }
                                         }
                                     }
