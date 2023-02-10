@@ -532,7 +532,10 @@ fun GameField(
         Box(modifier = Modifier
             .fillMaxSize()
             .testTag("Game Over Screen")
-            .clickable(enabled = botOrGameOverScreen.state.clickable) { ticViewModel.showMenu(true) }) {}
+            .clickable(enabled = botOrGameOverScreen.state.clickable) {
+                ticViewModel.showMenu(true)
+                ticViewModel.saveWinRow()
+            }) {}
     }
 }
 

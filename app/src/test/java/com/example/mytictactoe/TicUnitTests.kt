@@ -21,9 +21,10 @@ class TicUnitTests {
         for(i in gameArray.indices){
             gameArray[i][0].cellText = X
         }
-        viewModel.checkWin(0, 0, X)
-        assertEquals(CellColors.WIN, gameArray[0][0].cellColor)
-        assert(viewModel.uiState.value.botOrGameOverScreenVisible)
+        viewModel.checkField(EndOfCheck.WIN,0, 0)
+        assertEquals(CellColors.WIN_COLOR, gameArray[0][0].cellColor)
+        assert(viewModel.uiState.value.botOrGameOverScreen.state.visible)
+        assert(viewModel.uiState.value.botOrGameOverScreen.state.clickable)
     }
 
     @Test
@@ -33,7 +34,8 @@ class TicUnitTests {
         gameArray[1] = arrayOf(Cell(X), Cell(O), Cell(X))
         gameArray[2] = arrayOf(Cell(O), Cell(X), Cell(O))
         viewModel.checkDraw()
-        assertEquals(CellColors.DRAW, gameArray[0][0].cellColor)
-        assert(viewModel.uiState.value.botOrGameOverScreenVisible)
+        assertEquals(CellColors.DRAW_COLOR, gameArray[0][0].cellColor)
+        assert(viewModel.uiState.value.botOrGameOverScreen.state.visible)
+        assert(viewModel.uiState.value.botOrGameOverScreen.state.clickable)
     }
 }

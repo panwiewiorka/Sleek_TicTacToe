@@ -11,7 +11,7 @@ import com.example.mytictactoe.ui.theme.win
 data class Cell(
     var cellText: CellValues = CellValues.EMPTY,
     var isClickable: Boolean = true,
-    var cellColor: CellColors = CellColors.STANDART,
+    var cellColor: CellColors = CellColors.STANDART_COLOR,
 )
 
 enum class CellValues(val cellValue: Char){
@@ -21,20 +21,19 @@ enum class CellValues(val cellValue: Char){
 }
 
 enum class CellColors {
-    STANDART,
-    CURRENT,
-    WIN,
-    DRAW
-    ;
+    STANDART_COLOR,
+    CURRENT_COLOR,
+    WIN_COLOR,
+    DRAW_COLOR;
 
     val color: Color
         @Composable
         //@ReadOnlyComposable
         get() = when(this) {
-            STANDART -> MaterialTheme.colors.onSecondary
-            CURRENT -> MaterialTheme.colors.current
-            WIN -> MaterialTheme.colors.win
-            DRAW -> MaterialTheme.colors.draw
+            STANDART_COLOR -> MaterialTheme.colors.onSecondary
+            CURRENT_COLOR -> MaterialTheme.colors.current
+            WIN_COLOR -> MaterialTheme.colors.win
+            DRAW_COLOR -> MaterialTheme.colors.draw
         }
 }
 
@@ -56,3 +55,5 @@ enum class BotOrGameOverScreen(val state: BotOrGameOverScreenState) {
     GAMEOVER(BotOrGameOverScreenState(visible = true, clickable = true)),
     HIDDEN(BotOrGameOverScreenState(visible = false, clickable = false));
 }
+
+enum class EndOfCheck { WIN, DRAW, ONE_BEFORE_WIN }

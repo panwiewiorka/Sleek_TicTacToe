@@ -24,6 +24,6 @@ data class TicUiState(
     val gameArray: Array<Array<Cell>> = Array(3) { i -> Array(3) { j -> Cell(
         isClickable = true,
         cellText = CellValues.EMPTY,
-        cellColor = CellColors.STANDART,
+        cellColor = CellColors.STANDART_COLOR,
     ) } }
 )
