@@ -18,6 +18,8 @@ data class TicUiState(
     val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
+    val menuButtonOffset: Boolean = false,
+    val firstMoveByAI: Boolean = false,
     val currentMove: CellValues = CellValues.X,
     val cancelMoveButtonEnabled: Boolean = false,
     val cellFontSize: TextUnit = 68.sp,

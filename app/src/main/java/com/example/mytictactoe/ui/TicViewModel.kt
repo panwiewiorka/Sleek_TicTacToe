@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.update
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
 import com.example.mytictactoe.EndOfCheck.*
+import kotlinx.coroutines.*
 
 class TicViewModel: ViewModel() {
 
@@ -18,6 +19,7 @@ class TicViewModel: ViewModel() {
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
     private val bot = Bot()
+    private lateinit var botWaits: Job
 
     private var iOneMoveBefore: Int = 0
     private var jOneMoveBefore: Int = 0
@@ -29,7 +31,13 @@ class TicViewModel: ViewModel() {
     //--------INTERFACE
 
     fun showMenu(show: Boolean){
-        if(show) setMenuSettings(LOAD) else setMenuSettings(SAVE)
+        if(show) {
+            //setMenuSettings(LOAD)
+            //saveWinRow()
+        } else {
+            //setMenuSettings(SAVE)
+            //cancelWinRowChangesDuringTheGame()
+        }
         _uiState.update { currentState ->
             currentState.copy(menuIsVisible = show)
         }
@@ -56,6 +64,7 @@ class TicViewModel: ViewModel() {
     private fun setCellFontSize(gameFieldSize: Int) {
         // changing cellFontSize depending on gameFieldSize
         // before unnecessary recomposition possible by AutoResizedText() composable
+        // TODO: remember resized cell size and use it for all cells?
         _uiState.update { a ->
             a.copy(
                 cellFontSize = (62 - (6 * (gameFieldSize - 3))).sp
@@ -99,10 +108,22 @@ class TicViewModel: ViewModel() {
     }
 
     fun cancelWinRowChangesDuringTheGame(){
-        if(freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size)) {
+        if(
+            (uiState.value.savedWinRow != uiState.value.winRow) &&
+            (freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size))){
             _uiState.update { a ->
-                a.copy(winRow = uiState.value.savedWinRow)
+                a.copy(
+                    winRow = uiState.value.savedWinRow
+                )
             }
+        }
+    }
+
+    fun changeMenuButtonOffset(){
+        _uiState.update { a ->
+            a.copy(
+                menuButtonOffset = !uiState.value.menuButtonOffset
+            )
         }
     }
 
@@ -114,7 +135,7 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    fun setBotOrGameOverScreen(state: BotOrGameOverScreen){
+    private fun setBotOrGameOverScreen(state: BotOrGameOverScreen){
         _uiState.update { a ->
             a.copy(
                 botOrGameOverScreen = when(state){
@@ -183,13 +204,28 @@ class TicViewModel: ViewModel() {
 
     fun makeBotMove(){
         with(bot) {
-            setMoveCoordinates(uiState.value.gameArray, ::checkField)
-            makeMove(botI, botJ)
-            disableCancelButton()
-            if (uiState.value.botOrGameOverScreen == BOT) {
-                setBotOrGameOverScreen(HIDDEN)
+            if(uiState.value.playingVsAI && (uiState.value.currentMove == CellValues.O)) {
+                setBotOrGameOverScreen(BOT)
+                botWaits = GlobalScope.launch(Dispatchers.Main) {
+                    val waitTime = (500L..2000L).random()
+                    delay(waitTime)
+                    setMoveCoordinates(uiState.value.gameArray, ::checkField)
+                    makeMove(botI, botJ)
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            cancelMoveButtonEnabled = false
+                        )
+                    }
+                    if (uiState.value.botOrGameOverScreen == BOT) {
+                        setBotOrGameOverScreen(HIDDEN)
+                    }
+                }
             }
         }
+    }
+
+    fun cancelBotWait(){
+        if(uiState.value.playingVsAI) botWaits.cancel()
     }
 
     fun cancelMove(){
@@ -216,14 +252,6 @@ class TicViewModel: ViewModel() {
         setBotOrGameOverScreen(HIDDEN)
     }
 
-    fun disableCancelButton(){
-        _uiState.update { currentState ->
-            currentState.copy(
-                cancelMoveButtonEnabled = false
-            )
-        }
-    }
-
     private fun changeTurn(currentMove: CellValues){
         val updatedTurn = if(currentMove == CellValues.X) CellValues.O else CellValues.X
         _uiState.update { a ->
@@ -231,30 +259,160 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    private fun makeWin(
-        currentRow: Int,
-        from: Int,
-        to: Int,
-        x: Int?,
-        y: Int?,
-        z: Int?,
-        gameArray: Array<Array<Cell>> = uiState.value.gameArray,
-    ){
-        // changes color of winning cells to WIN_COLOR
-        for(a in from until to + currentRow) {
-            gameArray[x ?: a][(y ?: a) + (z ?: -a)].cellColor = CellColors.WIN_COLOR
-        }
-        setBotOrGameOverScreen(GAMEOVER)
-    }
-
     private fun directionalCheck(
+        endOfCheck: EndOfCheck,
         a: Int,
         b: Int,
-        emptyCell: CellValues?,
-        gameArray: Array<Array<Cell>> = uiState.value.gameArray,
-        currentMove: CellValues = uiState.value.currentMove,
     ): Boolean {
-        return ((gameArray[a][b].cellText == currentMove) || (gameArray[a][b].cellText == (emptyCell ?: currentMove)))
+        //in case of DRAW searching for currentMove & EMPTY cells, otherwise only for currentMove cells (currentMove || currentMove)
+        val emptyOrCurrentMoveCell = if(endOfCheck == DRAW) CellValues.EMPTY else uiState.value.currentMove
+
+        return ((uiState.value.gameArray[a][b].cellText == uiState.value.currentMove) ||
+                (uiState.value.gameArray[a][b].cellText == (emptyOrCurrentMoveCell)))
+    }
+
+    private fun checkVertically(
+        endOfCheck: EndOfCheck,
+        i: Int,
+        j: Int,
+    ){
+        val gameArray = uiState.value.gameArray
+        // check forward
+        var newI = i
+        var currentRow = 1
+
+        // searching within the boundaries of array for the currentMove cells (and EMPTY cells in case of DRAW)
+        while((newI + 1 < gameArray.size) && directionalCheck(endOfCheck, newI + 1, j)){
+            currentRow++
+            newI++
+        }
+        // then backward
+        newI = i
+        while((newI > 0) && directionalCheck(endOfCheck, newI - 1, j)){
+            currentRow++
+            newI--
+        }
+
+        if (currentRow >= uiState.value.winRow) {
+            when(endOfCheck){
+                WIN -> {
+                    for(a in newI until newI + currentRow) {
+                        gameArray[a][j].cellColor = CellColors.WIN_COLOR
+                    }
+                    setBotOrGameOverScreen(GAMEOVER)
+                }
+                DRAW -> { winIsImpossible = false; return }
+                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+            }
+        }
+    }
+
+    private fun checkHorizontally(
+        endOfCheck: EndOfCheck,
+        i: Int,
+        j: Int,
+    ){
+        val gameArray = uiState.value.gameArray
+
+        var newJ = j
+        var currentRow = 1
+
+        while((newJ + 1 < gameArray.size) && directionalCheck(endOfCheck, i, newJ + 1)){
+            currentRow++
+            newJ++
+        }
+        newJ = j
+        while((newJ > 0) && directionalCheck(endOfCheck, i, newJ - 1)){
+            currentRow++
+            newJ--
+        }
+
+        if (currentRow >= uiState.value.winRow) {
+            when(endOfCheck){
+                WIN -> {
+                    for(a in newJ until newJ + currentRow) {
+                        gameArray[i][a].cellColor = CellColors.WIN_COLOR
+                    }
+                    setBotOrGameOverScreen(GAMEOVER)
+                }
+                DRAW -> { winIsImpossible = false; return }
+                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+            }
+        }
+    }
+
+    private fun checkMainDiagonal(
+        endOfCheck: EndOfCheck,
+        i: Int,
+        j: Int,
+    ){
+        val gameArray = uiState.value.gameArray
+
+        var newI = i
+        var newJ = j
+        var currentRow = 1
+
+        while((newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) && directionalCheck(endOfCheck, newI + 1, newJ + 1)){
+            currentRow++
+            newI++
+            newJ++
+        }
+        newI = i
+        newJ = j
+        while((newI > 0) && (newJ > 0) && directionalCheck(endOfCheck, newI - 1, newJ - 1)){
+            currentRow++
+            newI--
+            newJ--
+        }
+        if (currentRow >= uiState.value.winRow) {
+            when(endOfCheck){
+                WIN -> {
+                    for(a in newI until newI + currentRow) {
+                        gameArray[a][a-newI+newJ].cellColor = CellColors.WIN_COLOR
+                    }
+                    setBotOrGameOverScreen(GAMEOVER)
+                }
+                DRAW -> { winIsImpossible = false; return }
+                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+            }
+        }
+    }
+
+    private fun checkOtherDiagonal(
+        endOfCheck: EndOfCheck,
+        i: Int,
+        j: Int,
+    ){
+        val gameArray = uiState.value.gameArray
+
+        var newI = i
+        var newJ = j
+        var currentRow = 1
+
+        while((newI + 1 < gameArray.size) && (newJ > 0) && directionalCheck(endOfCheck, newI + 1, newJ - 1)){
+            currentRow++
+            newI++
+            newJ--
+        }
+        newI = i
+        newJ = j
+        while((newI > 0) && (newJ + 1 < gameArray.size) && directionalCheck(endOfCheck, newI - 1, newJ + 1)){
+            currentRow++
+            newI--
+            newJ++
+        }
+        if (currentRow >= uiState.value.winRow) {
+            when(endOfCheck){
+                WIN -> {
+                    for(a in newI until newI + currentRow) {
+                        gameArray[a][newJ-a+newI].cellColor = CellColors.WIN_COLOR
+                    }
+                    setBotOrGameOverScreen(GAMEOVER)
+                }
+                DRAW -> { winIsImpossible = false; return }
+                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+            }
+        }
     }
 
     internal fun checkField(
@@ -269,106 +427,10 @@ class TicViewModel: ViewModel() {
         Then, if enough cells found, endOfCheck chooses the outcome (depending on What we are searching for)
          */
 
-        val gameArray = uiState.value.gameArray
-
-        //in case of DRAW searching for currentMove & EMPTY cells, otherwise only for currentMove cells
-        val emptyCell = if(endOfCheck == DRAW) CellValues.EMPTY else null
-
-        // VERTICAL CHECK forward
-        var newI = i
-        var currentRow = 1
-
-        // searching within the boundaries of array for the currentMove cells (and EMPTY cells in case of DRAW)
-        while((newI + 1 < gameArray.size) && directionalCheck(newI + 1, j, emptyCell)){
-            currentRow++
-            newI++
-        }
-        // then backward
-        newI = i
-        while((newI > 0) && directionalCheck(newI - 1, j, emptyCell)){
-            currentRow++
-            newI--
-        }
-
-        if (currentRow >= uiState.value.winRow) {
-            when(endOfCheck){
-                WIN -> makeWin(currentRow, from = newI, to = newI, x = null, y = j, z = 0)
-                DRAW -> { winIsImpossible = false; return }
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
-            }
-        }
-
-        // HORIZONTAL CHECK
-        var newJ = j
-        currentRow = 1
-
-        while((newJ + 1 < gameArray.size) && directionalCheck(i, newJ + 1, emptyCell)){
-            currentRow++
-            newJ++
-        }
-        newJ = j
-        while((newJ > 0) && directionalCheck(i, newJ - 1, emptyCell)){
-            currentRow++
-            newJ--
-        }
-
-        if (currentRow >= uiState.value.winRow) {
-            when(endOfCheck){
-                WIN -> makeWin(currentRow, from = newJ, to = newJ, x = i, y = null, z = 0)
-                DRAW -> { winIsImpossible = false; return }
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
-            }
-        }
-
-        // MAIN DIAGONAL CHECK
-        newI = i
-        newJ = j
-        currentRow = 1
-
-        while((newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) && directionalCheck(newI + 1, newJ + 1, emptyCell)){
-            currentRow++
-            newI++
-            newJ++
-        }
-        newI = i
-        newJ = j
-        while((newI > 0) && (newJ > 0) && directionalCheck(newI - 1, newJ - 1, emptyCell)){
-            currentRow++
-            newI--
-            newJ--
-        }
-        if (currentRow >= uiState.value.winRow) {
-            when(endOfCheck){
-                WIN -> makeWin(currentRow, from = newI, to = newI, x = null, y = null, z = newJ - newI)
-                DRAW -> { winIsImpossible = false; return }
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
-            }
-        }
-
-        // OTHER DIAGONAL CHECK
-        newI = i
-        newJ = j
-        currentRow = 1
-
-        while((newI + 1 < gameArray.size) && (newJ > 0) && directionalCheck(newI + 1, newJ - 1, emptyCell)){
-            currentRow++
-            newI++
-            newJ--
-        }
-        newI = i
-        newJ = j
-        while((newI > 0) && (newJ + 1 < gameArray.size) && directionalCheck(newI - 1, newJ + 1, emptyCell)){
-            currentRow++
-            newI--
-            newJ++
-        }
-        if (currentRow >= uiState.value.winRow) {
-            when(endOfCheck){
-                WIN -> makeWin(currentRow, from = newI, to = newI, x = null, y = newI + newJ, z = null)
-                DRAW -> { winIsImpossible = false; return }
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
-            }
-        }
+        checkVertically(endOfCheck, i, j)
+        checkHorizontally(endOfCheck, i, j)
+        checkMainDiagonal(endOfCheck, i, j)
+        checkOtherDiagonal(endOfCheck, i, j)
     }
 
     internal fun checkDraw(){
@@ -402,4 +464,7 @@ class TicViewModel: ViewModel() {
             setBotOrGameOverScreen(GAMEOVER)
         }
     }
+
 }
+
+

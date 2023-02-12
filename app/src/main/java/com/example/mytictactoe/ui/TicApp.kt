@@ -1,5 +1,7 @@
 package com.example.mytictactoe.ui
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,7 +31,6 @@ import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 import com.example.mytictactoe.ui.theme.menuBorder
-import kotlinx.coroutines.*
 
 
 @Composable
@@ -42,8 +43,10 @@ fun TicApp(
     if (ticUiState.menuIsVisible){
         AlertDialog(
             onDismissRequest = {
+                ticViewModel.cancelWinRowChangesDuringTheGame()
+                ticViewModel.setMenuSettings(SAVE)
                 ticViewModel.showMenu(false)
-                ticViewModel.cancelWinRowChangesDuringTheGame() },
+                               },
             buttons = {
                 MainMenu (
                     size = ticUiState.gameArray.size,
@@ -96,6 +99,7 @@ fun TicApp(
                     cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
                     cancelMove = {ticViewModel.cancelMove()},
                     paddingStart = 10.dp,
+                    cancelBotWait = {ticViewModel.cancelBotWait()},
                 )
 
                 //---------------------------icon  XO
@@ -104,7 +108,7 @@ fun TicApp(
                     currentMove = ticUiState.currentMove,
                     paddingTop = 8.dp,
                     paddingBottom = 10.dp,
-                    makeBotMove = {ticViewModel.makeBotMove()}
+                    //makeBotMove = {ticViewModel.makeBotMove()}
                 )
 
                 //---------------------------button  []
@@ -114,8 +118,12 @@ fun TicApp(
                         .testTag("Menu Button"),
                     menuIsVisible = ticUiState.menuIsVisible,
                     winRow = ticUiState.winRow,
-                    saveWinRow = {ticViewModel.saveWinRow()},
-                    showMenuDialog = {ticViewModel.showMenu(!ticUiState.menuIsVisible)},
+                    menuLoading = {
+                        ticViewModel.saveWinRow()
+                        //ticViewModel.showMenu(!ticUiState.menuIsVisible)
+                        ticViewModel.showMenu(true)
+                        ticViewModel.setMenuSettings(LOAD)
+                                     },
                 )
             }
         } else {
@@ -144,8 +152,12 @@ fun TicApp(
                         .testTag("Menu Button"),
                     menuIsVisible = ticUiState.menuIsVisible,
                     winRow = ticUiState.winRow,
-                    saveWinRow = {ticViewModel.saveWinRow()},
-                    showMenuDialog = {ticViewModel.showMenu(!ticUiState.menuIsVisible)},
+                    menuLoading = {
+                        ticViewModel.saveWinRow()
+                        //ticViewModel.showMenu(!ticUiState.menuIsVisible)
+                        ticViewModel.showMenu(true)
+                        ticViewModel.setMenuSettings(LOAD)
+                    },
                 )
 
                 //---------------------------icon  XO
@@ -155,7 +167,7 @@ fun TicApp(
                         .padding(bottom = 24.dp),
                     currentMove = ticUiState.currentMove,
                     paddingStart = 15.dp,
-                    makeBotMove = {ticViewModel.makeBotMove()}
+                    //makeBotMove = {ticViewModel.makeBotMove()}
                 )
 
                 //---------------------------button  <
@@ -167,7 +179,8 @@ fun TicApp(
                     cancelMove = {ticViewModel.cancelMove()},
                     paddingStart = 10.dp,
                     paddingBoxBottom = 34.dp,
-                )
+                    cancelBotWait = {ticViewModel.cancelBotWait()},
+                    )
             }
         }
     }
@@ -196,7 +209,7 @@ fun MainMenu(
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
         winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
-        ticViewModel.setMenuSettings(SAVE)
+        ticViewModel.setMenuSettings(SAVE) // disabling IF condition to load settings only once, when menu is shown
     }
     Column(
         modifier = Modifier.padding(25.dp),
@@ -331,8 +344,9 @@ fun MainMenu(
                 elevation = null,
                 onClick = {
                 ticViewModel.resetGame(size)
+                ticViewModel.setMenuSettings(SAVE)
+                //ticViewModel.setWinRow(winRowSliderPosition)
                 ticViewModel.showMenu(false)
-                ticViewModel.setWinRow(winRowSliderPosition)
             }) {
                 AutoResizedText(
                     text = "START",
@@ -355,10 +369,14 @@ fun CancelButton(
     paddingStart: Dp = 0.dp,
     //paddingEnd: Dp = 0.dp,
     paddingBoxBottom: Dp = 0.dp,
+    cancelBotWait: () -> Unit,
 ){
     Button(
         modifier = modifier,
-        onClick = { cancelMove() },
+        onClick = {
+            cancelMove()
+            cancelBotWait()
+                  },
         enabled = cancelMoveButtonEnabled,
         shape = RoundedCornerShape(15.dp),
         border = null,
@@ -395,7 +413,7 @@ fun XOButton(
     paddingBottom: Dp = 0.dp,
     paddingStart: Dp = 0.dp,
     paddingEnd: Dp = 0.dp,
-    makeBotMove: () -> Unit,
+    //makeBotMove: () -> Unit,
 ){
     Box(
         modifier = modifier,
@@ -418,7 +436,7 @@ fun XOButton(
                     end = paddingEnd
                 )
                 .testTag(testStringCurrentMove)
-                .clickable { makeBotMove() }
+                //.clickable { makeBotMove() }
         )
     }
 }
@@ -429,15 +447,13 @@ fun MenuButton(
     modifier: Modifier,
     menuIsVisible: Boolean,
     winRow: Int,
-    saveWinRow: () -> Unit,
-    showMenuDialog: (Boolean) -> Unit,
+    //showMenuDialog: (Boolean) -> Unit,
+    menuLoading: () -> Unit,
 ){
     Button(
         modifier = modifier,
-        onClick = {
-            saveWinRow()
-            showMenuDialog(!menuIsVisible)
-        },
+        //onClick = { showMenuDialog(!menuIsVisible) },
+        onClick = { menuLoading() },
         shape = RoundedCornerShape(15.dp),
         border = null,
         elevation = null,
@@ -445,7 +461,14 @@ fun MenuButton(
             backgroundColor = Color(0x00000000),
         )
     ) {
-        Box(contentAlignment = Alignment.Center){
+        val springAmplitude = 0.dp
+        val springMove by animateDpAsState(
+            targetValue = springAmplitude,
+            animationSpec = spring(dampingRatio = 0.5f, stiffness = 1500f)
+        )
+        Box(contentAlignment = Alignment.Center,
+            modifier = Modifier.offset(x = springMove,y = 0.dp)
+        ){
             Icon(
                 painterResource(R.drawable.crop_square_48px),
                 "Menu",
@@ -496,17 +519,7 @@ fun GameField(
                                     enabled = gameArray[i][j].isClickable,
                                     onClick = {
                                         ticViewModel.makeMove(i = i, j = j)
-                                        if(ticViewModel.uiState.value.playingVsAI && (ticViewModel.uiState.value.currentMove == CellValues.O)) {
-                                            val currentMove = ticViewModel.uiState.value.currentMove
-                                            GlobalScope.launch(Dispatchers.Main) {
-                                                ticViewModel.setBotOrGameOverScreen(BotOrGameOverScreen.BOT)
-                                                val botWait = (500L..2000L).random()
-                                                delay(botWait)
-                                                if(currentMove == ticViewModel.uiState.value.currentMove) {
-                                                    ticViewModel.makeBotMove()
-                                                }
-                                            }
-                                        }
+                                        ticViewModel.makeBotMove()
                                     }
                                 )
                                 .testTag("Cell $i $j")
@@ -533,8 +546,9 @@ fun GameField(
             .fillMaxSize()
             .testTag("Game Over Screen")
             .clickable(enabled = botOrGameOverScreen.state.clickable) {
-                ticViewModel.showMenu(true)
                 ticViewModel.saveWinRow()
+                ticViewModel.showMenu(true)
+                ticViewModel.setMenuSettings(LOAD)
             }) {}
     }
 }

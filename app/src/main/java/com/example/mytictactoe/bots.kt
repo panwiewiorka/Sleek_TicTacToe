@@ -1,8 +1,7 @@
 package com.example.mytictactoe
 
-import com.example.mytictactoe.ui.TicViewModel
 
-class Bot() {
+class Bot {
 
     var botI = 0
     var botJ = 0
@@ -24,9 +23,7 @@ class Bot() {
         return
     }
 
-    fun chooseRandomFreeCell(
-        gameArray: Array<Array<Cell>>
-    ){
+    private fun chooseRandomFreeCell(gameArray: Array<Array<Cell>>){
         val mapOfEmptyCells = gameArray
             .flatten()
             .mapIndexed{index, value -> index to value}
@@ -35,7 +32,10 @@ class Bot() {
         numberToCoordinates(mapOfEmptyCells.keys.random(), gameArray.size)
     }
 
-    fun setMoveCoordinates(gameArray: Array<Array<Cell>>, checkField: (EndOfCheck, Int, Int) -> Unit){
+    fun setMoveCoordinates(
+        gameArray: Array<Array<Cell>>,
+        checkField: (EndOfCheck, Int, Int) -> Unit
+    ){
         for (i in gameArray.indices){
             for (j in gameArray[i].indices){
                 if((gameArray[i][j].cellText == CellValues.EMPTY) && botCannotWin){

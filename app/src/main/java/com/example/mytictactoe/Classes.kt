@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.mytictactoe.ui.theme.current
 import com.example.mytictactoe.ui.theme.draw
 import com.example.mytictactoe.ui.theme.win
+import kotlinx.coroutines.*
 
 
 data class Cell(
