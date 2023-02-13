@@ -15,13 +15,13 @@ data class TicUiState(
     val menuIsVisible: Boolean = true,
     val playingVsAI: Boolean = false,
     val fieldSize: Dp = 0.dp,
-    val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
-    val menuButtonOffset: Boolean = false,
-    val firstMoveByAI: Boolean = false,
+    val menuButtonShouldBeShaken: Boolean = false,
+    val aiMove: CellValues = CellValues.X, // changed before the first game to 0
     val currentMove: CellValues = CellValues.X,
     val cancelMoveButtonEnabled: Boolean = false,
+    val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
     val cellFontSize: TextUnit = 68.sp,
     val gameArray: Array<Array<Cell>> = Array(3) { i -> Array(3) { j -> Cell(
         isClickable = true,

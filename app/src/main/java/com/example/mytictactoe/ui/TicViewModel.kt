@@ -19,7 +19,7 @@ class TicViewModel: ViewModel() {
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
     private val bot = Bot()
-    private lateinit var botWaits: Job
+    private var botWaits: Job = GlobalScope.launch {  }
 
     private var iOneMoveBefore: Int = 0
     private var jOneMoveBefore: Int = 0
@@ -31,13 +31,6 @@ class TicViewModel: ViewModel() {
     //--------INTERFACE
 
     fun showMenu(show: Boolean){
-        if(show) {
-            //setMenuSettings(LOAD)
-            //saveWinRow()
-        } else {
-            //setMenuSettings(SAVE)
-            //cancelWinRowChangesDuringTheGame()
-        }
         _uiState.update { currentState ->
             currentState.copy(menuIsVisible = show)
         }
@@ -58,6 +51,14 @@ class TicViewModel: ViewModel() {
         // recomposing only on discrete value changes
         if(size != uiState.value.gameArray.size){
             resetGame(size)
+        }
+    }
+
+    fun shakeMenuButton(shake: Boolean){
+        _uiState.update { a ->
+            a.copy(
+                menuButtonShouldBeShaken = shake
+            )
         }
     }
 
@@ -111,19 +112,12 @@ class TicViewModel: ViewModel() {
         if(
             (uiState.value.savedWinRow != uiState.value.winRow) &&
             (freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size))){
+            shakeMenuButton(true)
             _uiState.update { a ->
                 a.copy(
                     winRow = uiState.value.savedWinRow
                 )
             }
-        }
-    }
-
-    fun changeMenuButtonOffset(){
-        _uiState.update { a ->
-            a.copy(
-                menuButtonOffset = !uiState.value.menuButtonOffset
-            )
         }
     }
 
@@ -176,13 +170,12 @@ class TicViewModel: ViewModel() {
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
-        val currentMove = uiState.value.currentMove
         //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
         gameArray[iOneMoveBefore][jOneMoveBefore].cellColor = CellColors.STANDART_COLOR
         gameArray[i][j].cellColor = CellColors.CURRENT_COLOR
-        gameArray[i][j].cellText = currentMove
+        gameArray[i][j].cellText = uiState.value.currentMove
         gameArray[i][j].isClickable = false
         _uiState.update { a ->
             a.copy(
@@ -197,14 +190,15 @@ class TicViewModel: ViewModel() {
         if(uiState.value.botOrGameOverScreen != GAMEOVER) {
             checkDraw()
             if(uiState.value.botOrGameOverScreen != GAMEOVER) {
-                changeTurn(currentMove)
+                changeTurn()
             }
         }
     }
 
     fun makeBotMove(){
         with(bot) {
-            if(uiState.value.playingVsAI && (uiState.value.currentMove == CellValues.O)) {
+            if(uiState.value.playingVsAI && (uiState.value.currentMove == uiState.value.aiMove) &&
+                ((uiState.value.botOrGameOverScreen != GAMEOVER))) {
                 setBotOrGameOverScreen(BOT)
                 botWaits = GlobalScope.launch(Dispatchers.Main) {
                     val waitTime = (500L..2000L).random()
@@ -224,8 +218,22 @@ class TicViewModel: ViewModel() {
         }
     }
 
+    fun changeBotMove(){
+        if((freeCellsLeft == uiState.value.gameArray.size * uiState.value.gameArray.size) &&
+            uiState.value.playingVsAI){
+            _uiState.update { a ->
+                a.copy(
+                    aiMove = if(uiState.value.aiMove == CellValues.O) CellValues.X else CellValues.O
+                )
+            }
+        }
+    }
+
     fun cancelBotWait(){
-        if(uiState.value.playingVsAI) botWaits.cancel()
+        if(uiState.value.playingVsAI && botWaits.isActive) {
+            botWaits.cancel()
+            setBotOrGameOverScreen(HIDDEN)
+        }
     }
 
     fun cancelMove(){
@@ -236,7 +244,7 @@ class TicViewModel: ViewModel() {
                     gameArray[i][j].cellColor = CellColors.STANDART_COLOR
                 }
             }
-        } else changeTurn(uiState.value.currentMove)
+        } else changeTurn()
         gameArray[iOneMoveBefore][jOneMoveBefore].cellText = CellValues.EMPTY
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].cellColor = CellColors.CURRENT_COLOR
@@ -252,8 +260,8 @@ class TicViewModel: ViewModel() {
         setBotOrGameOverScreen(HIDDEN)
     }
 
-    private fun changeTurn(currentMove: CellValues){
-        val updatedTurn = if(currentMove == CellValues.X) CellValues.O else CellValues.X
+    private fun changeTurn(){
+        val updatedTurn = if(uiState.value.currentMove == CellValues.X) CellValues.O else CellValues.X
         _uiState.update { a ->
             a.copy(currentMove = updatedTurn)
         }
@@ -301,7 +309,7 @@ class TicViewModel: ViewModel() {
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
-                DRAW -> { winIsImpossible = false; return }
+                DRAW -> { winIsImpossible = false}
                 ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
             }
         }
@@ -335,7 +343,7 @@ class TicViewModel: ViewModel() {
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
-                DRAW -> { winIsImpossible = false; return }
+                DRAW -> { winIsImpossible = false}
                 ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
             }
         }
@@ -372,7 +380,7 @@ class TicViewModel: ViewModel() {
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
-                DRAW -> { winIsImpossible = false; return }
+                DRAW -> { winIsImpossible = false}
                 ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
             }
         }
@@ -409,7 +417,7 @@ class TicViewModel: ViewModel() {
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
-                DRAW -> { winIsImpossible = false; return }
+                DRAW -> { winIsImpossible = false}
                 ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
             }
         }
@@ -445,7 +453,7 @@ class TicViewModel: ViewModel() {
                 }
             }
         }
-        changeTurn(uiState.value.currentMove)
+        changeTurn()
         for (i in gameArray.indices){  // for this player
             for (j in gameArray[i].indices){
                 if((gameArray[i][j].cellText == CellValues.EMPTY) && winIsImpossible){
@@ -453,7 +461,7 @@ class TicViewModel: ViewModel() {
                 }
             }
         }
-        changeTurn(uiState.value.currentMove)
+        changeTurn()
         // if there are no such cells -> Draw
         if(winIsImpossible) {
             for(i in gameArray.indices) {

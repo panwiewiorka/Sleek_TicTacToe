@@ -1,7 +1,6 @@
 package com.example.mytictactoe.ui
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,7 +31,6 @@ import com.example.mytictactoe.R
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 import com.example.mytictactoe.ui.theme.menuBorder
 
-
 @Composable
 fun TicApp(
     ticViewModel: TicViewModel = viewModel()
@@ -46,6 +44,8 @@ fun TicApp(
                 ticViewModel.cancelWinRowChangesDuringTheGame()
                 ticViewModel.setMenuSettings(SAVE)
                 ticViewModel.showMenu(false)
+                ticViewModel.changeBotMove() // if new game
+                ticViewModel.makeBotMove() // if Bot's turn
                                },
             buttons = {
                 MainMenu (
@@ -97,18 +97,19 @@ fun TicApp(
                         .weight(1f)
                         .testTag("Cancel Button"),
                     cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
-                    cancelMove = {ticViewModel.cancelMove()},
+                    cancelMove = {
+                        ticViewModel.cancelMove()
+                        ticViewModel.cancelBotWait()
+                                 },
                     paddingStart = 10.dp,
-                    cancelBotWait = {ticViewModel.cancelBotWait()},
                 )
 
                 //---------------------------icon  XO
-                XOButton(
+                XOIcon(
                     modifier = Modifier.weight(1f),
                     currentMove = ticUiState.currentMove,
                     paddingTop = 8.dp,
                     paddingBottom = 10.dp,
-                    //makeBotMove = {ticViewModel.makeBotMove()}
                 )
 
                 //---------------------------button  []
@@ -116,14 +117,15 @@ fun TicApp(
                     modifier = Modifier
                         .weight(1f)
                         .testTag("Menu Button"),
-                    menuIsVisible = ticUiState.menuIsVisible,
                     winRow = ticUiState.winRow,
                     menuLoading = {
+                        ticViewModel.cancelBotWait()
                         ticViewModel.saveWinRow()
-                        //ticViewModel.showMenu(!ticUiState.menuIsVisible)
                         ticViewModel.showMenu(true)
                         ticViewModel.setMenuSettings(LOAD)
                                      },
+                    menuButtonShouldBeShaken = ticUiState.menuButtonShouldBeShaken,
+                    shakeMenuButton = {ticViewModel.shakeMenuButton(false)}
                 )
             }
         } else {
@@ -150,24 +152,23 @@ fun TicApp(
                         .weight(1f)
                         .padding(bottom = 18.dp)
                         .testTag("Menu Button"),
-                    menuIsVisible = ticUiState.menuIsVisible,
                     winRow = ticUiState.winRow,
                     menuLoading = {
                         ticViewModel.saveWinRow()
-                        //ticViewModel.showMenu(!ticUiState.menuIsVisible)
                         ticViewModel.showMenu(true)
                         ticViewModel.setMenuSettings(LOAD)
                     },
+                    menuButtonShouldBeShaken = ticUiState.menuButtonShouldBeShaken,
+                    shakeMenuButton = {ticViewModel.shakeMenuButton(false)}
                 )
 
                 //---------------------------icon  XO
-                XOButton(
+                XOIcon(
                     modifier = Modifier
                         .weight(1f)
                         .padding(bottom = 24.dp),
                     currentMove = ticUiState.currentMove,
                     paddingStart = 15.dp,
-                    //makeBotMove = {ticViewModel.makeBotMove()}
                 )
 
                 //---------------------------button  <
@@ -179,7 +180,6 @@ fun TicApp(
                     cancelMove = {ticViewModel.cancelMove()},
                     paddingStart = 10.dp,
                     paddingBoxBottom = 34.dp,
-                    cancelBotWait = {ticViewModel.cancelBotWait()},
                     )
             }
         }
@@ -208,7 +208,7 @@ fun MainMenu(
         sizeSliderPosition = size.toFloat()
         winRowSliderPosition = winRow.toFloat()
         winRowUpperLimit = sizeSliderPosition
-        winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
+        winRowSteps = if(sizeSliderPosition > 3) { sizeSliderPosition.toInt() - 4 } else 0
         ticViewModel.setMenuSettings(SAVE) // disabling IF condition to load settings only once, when menu is shown
     }
     Column(
@@ -216,6 +216,7 @@ fun MainMenu(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        //-------------------- BOARD SIZE text & slider
         Box(
             modifier = Modifier.heightIn(10.dp, 60.dp)
         ){
@@ -252,6 +253,7 @@ fun MainMenu(
                 inactiveTrackColor = MaterialTheme.colors.primaryVariant
             )
         )
+        //-------------------- WIN ROW text & sliders
         Box(
             modifier = Modifier.heightIn(10.dp, 60.dp)
         ){
@@ -265,7 +267,8 @@ fun MainMenu(
         Box(
             modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
         ){
-            Slider( // background grey slider
+            // background grey slider
+            Slider(
                 enabled = false,
                 value = winRowSliderPosition,
                 onValueChange = {},
@@ -273,6 +276,7 @@ fun MainMenu(
                 steps = 4,
                 modifier = Modifier.width(220.dp),
             )
+            // real winRow slider
             if(winRowUpperLimit != 3f){
                 Slider(
                     value = winRowSliderPosition,
@@ -298,6 +302,7 @@ fun MainMenu(
                 )
             }
         }
+        //-------------------- THEME, BOT, START buttons
         Row(
             modifier = Modifier.width(204.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -345,8 +350,9 @@ fun MainMenu(
                 onClick = {
                 ticViewModel.resetGame(size)
                 ticViewModel.setMenuSettings(SAVE)
-                //ticViewModel.setWinRow(winRowSliderPosition)
                 ticViewModel.showMenu(false)
+                ticViewModel.changeBotMove()
+                ticViewModel.makeBotMove()
             }) {
                 AutoResizedText(
                     text = "START",
@@ -369,14 +375,10 @@ fun CancelButton(
     paddingStart: Dp = 0.dp,
     //paddingEnd: Dp = 0.dp,
     paddingBoxBottom: Dp = 0.dp,
-    cancelBotWait: () -> Unit,
 ){
     Button(
         modifier = modifier,
-        onClick = {
-            cancelMove()
-            cancelBotWait()
-                  },
+        onClick = cancelMove,
         enabled = cancelMoveButtonEnabled,
         shape = RoundedCornerShape(15.dp),
         border = null,
@@ -406,14 +408,13 @@ fun CancelButton(
 
 
 @Composable
-fun XOButton(
+fun XOIcon(
     modifier: Modifier,
     currentMove: CellValues,
     paddingTop: Dp = 0.dp,
     paddingBottom: Dp = 0.dp,
     paddingStart: Dp = 0.dp,
     paddingEnd: Dp = 0.dp,
-    //makeBotMove: () -> Unit,
 ){
     Box(
         modifier = modifier,
@@ -436,7 +437,6 @@ fun XOButton(
                     end = paddingEnd
                 )
                 .testTag(testStringCurrentMove)
-                //.clickable { makeBotMove() }
         )
     }
 }
@@ -445,15 +445,14 @@ fun XOButton(
 @Composable
 fun MenuButton(
     modifier: Modifier,
-    menuIsVisible: Boolean,
     winRow: Int,
-    //showMenuDialog: (Boolean) -> Unit,
     menuLoading: () -> Unit,
+    menuButtonShouldBeShaken: Boolean,
+    shakeMenuButton: (Boolean) -> Unit,
 ){
     Button(
         modifier = modifier,
-        //onClick = { showMenuDialog(!menuIsVisible) },
-        onClick = { menuLoading() },
+        onClick = menuLoading,
         shape = RoundedCornerShape(15.dp),
         border = null,
         elevation = null,
@@ -461,13 +460,18 @@ fun MenuButton(
             backgroundColor = Color(0x00000000),
         )
     ) {
-        val springAmplitude = 0.dp
-        val springMove by animateDpAsState(
-            targetValue = springAmplitude,
-            animationSpec = spring(dampingRatio = 0.5f, stiffness = 1500f)
+        val shake by animateDpAsState(
+            targetValue = if (menuButtonShouldBeShaken) 15.dp else 0.dp,
+            animationSpec = if (menuButtonShouldBeShaken){
+            tween(durationMillis = 50, easing = FastOutLinearInEasing)
+            } else {
+                spring(dampingRatio = 0.15f, stiffness = 1200f)
+                    },
+            finishedListener = {shakeMenuButton(false)}
         )
+
         Box(contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(x = springMove,y = 0.dp)
+            modifier = Modifier.offset(x = shake,y = 0.dp)
         ){
             Icon(
                 painterResource(R.drawable.crop_square_48px),
@@ -646,8 +650,6 @@ fun AutoResizedText(
             }
         )
     }
-
-
 }
 
 

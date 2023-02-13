@@ -20,7 +20,6 @@ class Bot {
         botI = i
         botJ = j
         botCannotWin = false
-        return
     }
 
     private fun chooseRandomFreeCell(gameArray: Array<Array<Cell>>){
@@ -43,6 +42,7 @@ class Bot {
                 }
             }
         }
+        // ^^^ check for winning coordinates, if none - pick random: vvv
         if(botCannotWin) chooseRandomFreeCell(gameArray)
     }
 
