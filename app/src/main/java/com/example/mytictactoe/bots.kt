@@ -1,11 +1,12 @@
 package com.example.mytictactoe
 
 
-class Bot {
+object Bot {
 
     var botI = 0
     var botJ = 0
-    var botCannotWin: Boolean = true
+    var botCannotWin = true
+    var playerCannotWin = true
 
 //    fun coordinatesToNumber(i: Int, j: Int, size: Int): Int{
 //        return (i * size) + j
@@ -22,6 +23,12 @@ class Bot {
         botCannotWin = false
     }
 
+    fun chooseCoordinatesIfCanLose(i: Int, j: Int){
+        botI = i
+        botJ = j
+        playerCannotWin = false
+    }
+
     private fun chooseRandomFreeCell(gameArray: Array<Array<Cell>>){
         val mapOfEmptyCells = gameArray
             .flatten()
@@ -32,18 +39,43 @@ class Bot {
     }
 
     fun setMoveCoordinates(
+        winRow: Int,
         gameArray: Array<Array<Cell>>,
-        checkField: (EndOfCheck, Int, Int) -> Unit
+        changeTurn: () -> Unit,
+        checkField: (EndOfCheck, Int, Int) -> Unit,
     ){
+        // check for bot winning coordinates
         for (i in gameArray.indices){
             for (j in gameArray[i].indices){
                 if((gameArray[i][j].cellText == CellValues.EMPTY) && botCannotWin){
-                    checkField(EndOfCheck.ONE_BEFORE_WIN, i, j)
+                    checkField(EndOfCheck.ONE_BEFORE_BOT_WIN, i, j)
                 }
             }
         }
-        // ^^^ check for winning coordinates, if none - pick random: vvv
-        if(botCannotWin) chooseRandomFreeCell(gameArray)
+        // check if player can win in next move
+        if(botCannotWin){
+            changeTurn()
+            for (i in gameArray.indices){
+                for (j in gameArray[i].indices){
+                    if((gameArray[i][j].cellText == CellValues.EMPTY) && playerCannotWin){
+                        checkField(EndOfCheck.ONE_BEFORE_PLAYER_WIN, i, j)
+                    }
+                }
+            }
+            if((winRow < gameArray.size) && playerCannotWin){
+                for (i in gameArray.indices){
+                    for (j in gameArray[i].indices){
+                        if((gameArray[i][j].cellText == CellValues.EMPTY) && playerCannotWin){
+                            checkField(EndOfCheck.TWO_BEFORE_PLAYER_WIN, i, j)
+                        }
+                    }
+                }
+            }
+            changeTurn()
+        }
+        // ^^^ check for winning or losing_in_next_move coordinates, if none - pick random: vvv
+        if(botCannotWin && playerCannotWin) chooseRandomFreeCell(gameArray)
+        playerCannotWin = true
     }
 
 }

@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.Color
 import com.example.mytictactoe.ui.theme.current
 import com.example.mytictactoe.ui.theme.draw
 import com.example.mytictactoe.ui.theme.win
-import kotlinx.coroutines.*
 
 
 data class Cell(
@@ -57,4 +56,4 @@ enum class BotOrGameOverScreen(val state: BotOrGameOverScreenState) {
     HIDDEN(BotOrGameOverScreenState(visible = false, clickable = false));
 }
 
-enum class EndOfCheck { WIN, DRAW, ONE_BEFORE_WIN }
+enum class EndOfCheck { WIN, DRAW, ONE_BEFORE_BOT_WIN, ONE_BEFORE_PLAYER_WIN, TWO_BEFORE_PLAYER_WIN }

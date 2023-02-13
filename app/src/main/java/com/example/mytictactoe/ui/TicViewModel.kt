@@ -18,7 +18,6 @@ class TicViewModel: ViewModel() {
     private val _uiState = MutableStateFlow(TicUiState())
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
-    private val bot = Bot()
     private var botWaits: Job = GlobalScope.launch {  }
 
     private var iOneMoveBefore: Int = 0
@@ -159,7 +158,7 @@ class TicViewModel: ViewModel() {
             )
         }
         freeCellsLeft = size * size
-        bot.botCannotWin = true
+        Bot.botCannotWin = true
         // making sure array coordinates fit within gameField size
         // that is possibly smaller than in previous game vvv
         iOneMoveBefore = 0
@@ -196,14 +195,14 @@ class TicViewModel: ViewModel() {
     }
 
     fun makeBotMove(){
-        with(bot) {
+        with(Bot) {
             if(uiState.value.playingVsAI && (uiState.value.currentMove == uiState.value.aiMove) &&
                 ((uiState.value.botOrGameOverScreen != GAMEOVER))) {
                 setBotOrGameOverScreen(BOT)
                 botWaits = GlobalScope.launch(Dispatchers.Main) {
                     val waitTime = (500L..2000L).random()
                     delay(waitTime)
-                    setMoveCoordinates(uiState.value.gameArray, ::checkField)
+                    setMoveCoordinates(uiState.value.winRow, uiState.value.gameArray, ::changeTurn, ::checkField)
                     makeMove(botI, botJ)
                     _uiState.update { currentState ->
                         currentState.copy(
@@ -288,12 +287,20 @@ class TicViewModel: ViewModel() {
         // check forward
         var newI = i
         var currentRow = 1
+        var winInTwoMoves = 0
 
         // searching within the boundaries of array for the currentMove cells (and EMPTY cells in case of DRAW)
         while((newI + 1 < gameArray.size) && directionalCheck(endOfCheck, newI + 1, j)){
             currentRow++
             newI++
         }
+
+        // Bot special check for player's possible win in two moves
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI + 1 < gameArray.size) &&
+            (uiState.value.gameArray[newI + 1][j].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
         // then backward
         newI = i
         while((newI > 0) && directionalCheck(endOfCheck, newI - 1, j)){
@@ -301,6 +308,13 @@ class TicViewModel: ViewModel() {
             newI--
         }
 
+        // Bot special check for player's possible win in two moves
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI > 0) &&
+            (uiState.value.gameArray[newI - 1][j].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
+        // decision
         if (currentRow >= uiState.value.winRow) {
             when(endOfCheck){
                 WIN -> {
@@ -310,8 +324,13 @@ class TicViewModel: ViewModel() {
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
+        }
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
+            Bot.chooseCoordinatesIfCanLose(i, j)
         }
     }
 
@@ -324,15 +343,27 @@ class TicViewModel: ViewModel() {
 
         var newJ = j
         var currentRow = 1
+        var winInTwoMoves = 0
 
         while((newJ + 1 < gameArray.size) && directionalCheck(endOfCheck, i, newJ + 1)){
             currentRow++
             newJ++
         }
+
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newJ + 1 < gameArray.size) &&
+            (uiState.value.gameArray[i][newJ + 1].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
         newJ = j
         while((newJ > 0) && directionalCheck(endOfCheck, i, newJ - 1)){
             currentRow++
             newJ--
+        }
+
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newJ > 0) &&
+            (uiState.value.gameArray[i][newJ - 1].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
         }
 
         if (currentRow >= uiState.value.winRow) {
@@ -344,8 +375,13 @@ class TicViewModel: ViewModel() {
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
+        }
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
+            Bot.chooseCoordinatesIfCanLose(i, j)
         }
     }
 
@@ -359,12 +395,19 @@ class TicViewModel: ViewModel() {
         var newI = i
         var newJ = j
         var currentRow = 1
+        var winInTwoMoves = 0
 
         while((newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) && directionalCheck(endOfCheck, newI + 1, newJ + 1)){
             currentRow++
             newI++
             newJ++
         }
+
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) &&
+            (uiState.value.gameArray[newI + 1][newJ + 1].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
         newI = i
         newJ = j
         while((newI > 0) && (newJ > 0) && directionalCheck(endOfCheck, newI - 1, newJ - 1)){
@@ -372,6 +415,12 @@ class TicViewModel: ViewModel() {
             newI--
             newJ--
         }
+
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI > 0) && (newJ > 0) &&
+            (uiState.value.gameArray[newI - 1][newJ - 1].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
         if (currentRow >= uiState.value.winRow) {
             when(endOfCheck){
                 WIN -> {
@@ -381,8 +430,13 @@ class TicViewModel: ViewModel() {
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
+        }
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
+            Bot.chooseCoordinatesIfCanLose(i, j)
         }
     }
 
@@ -396,12 +450,19 @@ class TicViewModel: ViewModel() {
         var newI = i
         var newJ = j
         var currentRow = 1
+        var winInTwoMoves = 0
 
         while((newI + 1 < gameArray.size) && (newJ > 0) && directionalCheck(endOfCheck, newI + 1, newJ - 1)){
             currentRow++
             newI++
             newJ--
         }
+
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI + 1 < gameArray.size) && (newJ > 0) &&
+            (uiState.value.gameArray[newI + 1][newJ - 1].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
         newI = i
         newJ = j
         while((newI > 0) && (newJ + 1 < gameArray.size) && directionalCheck(endOfCheck, newI - 1, newJ + 1)){
@@ -409,6 +470,12 @@ class TicViewModel: ViewModel() {
             newI--
             newJ++
         }
+
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI > 0) && (newJ + 1 < gameArray.size) &&
+            (uiState.value.gameArray[newI - 1][newJ + 1].cellText == CellValues.EMPTY)){
+            winInTwoMoves++
+        }
+
         if (currentRow >= uiState.value.winRow) {
             when(endOfCheck){
                 WIN -> {
@@ -418,8 +485,13 @@ class TicViewModel: ViewModel() {
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_WIN -> bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
+        }
+        if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
+            Bot.chooseCoordinatesIfCanLose(i, j)
         }
     }
 
@@ -428,7 +500,7 @@ class TicViewModel: ViewModel() {
         i: Int,
         j: Int,
     ){
-        /* Algorithm is similar for checking of Win, Draw, possibleWin on nextMove, etc...
+        /* This is a multi-purpose algorithm for checking of Win, Draw, possible Win in one move, two moves...
         From currently clicked cell we are looking forward and backward, in all directions,
         to find same (X or 0 [and Empty, when searching for Draw]) cells, adding those founded and comparing them to winRow.
 
