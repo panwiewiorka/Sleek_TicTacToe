@@ -44,7 +44,6 @@ fun TicApp(
                 ticViewModel.cancelWinRowChangesDuringTheGame()
                 ticViewModel.setMenuSettings(SAVE)
                 ticViewModel.showMenu(false)
-                ticViewModel.changeBotMove() // if new game
                 ticViewModel.makeBotMove() // if Bot's turn
                                },
             buttons = {
@@ -105,11 +104,14 @@ fun TicApp(
                 )
 
                 //---------------------------icon  XO
-                XOIcon(
+                CurrentMoveIcon(
                     modifier = Modifier.weight(1f),
+                    playingVsAI = ticUiState.playingVsAI,
                     currentMove = ticUiState.currentMove,
+                    aiMove = ticUiState.aiMove,
                     paddingTop = 8.dp,
                     paddingBottom = 10.dp,
+                    botIconOffsetX = 30.dp,
                 )
 
                 //---------------------------button  []
@@ -132,7 +134,7 @@ fun TicApp(
 
             GameField(
                 vertPadding = 0.dp,
-                horPadding = 50.dp,
+                horPadding = 70.dp,
                 cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
                 botOrGameOverScreen = ticUiState.botOrGameOverScreen,
@@ -163,12 +165,15 @@ fun TicApp(
                 )
 
                 //---------------------------icon  XO
-                XOIcon(
+                CurrentMoveIcon(
                     modifier = Modifier
                         .weight(1f)
                         .padding(bottom = 24.dp),
+                    playingVsAI = ticUiState.playingVsAI,
                     currentMove = ticUiState.currentMove,
+                    aiMove = ticUiState.aiMove,
                     paddingStart = 15.dp,
+                    botIconOffsetY = (-34).dp,
                 )
 
                 //---------------------------button  <
@@ -337,7 +342,7 @@ fun MainMenu(
                 )
             ) {
                 Icon(
-                    painterResource(R.drawable.outline_smart_toy_black_48),
+                    painterResource(R.drawable.smart_toy_48px),
                     contentDescription = "Playing vs AI",
                     modifier = Modifier.size(40.dp),
                     tint = iconColor,
@@ -349,9 +354,10 @@ fun MainMenu(
                 elevation = null,
                 onClick = {
                 ticViewModel.resetGame(size)
+                ticViewModel.changeBotMove()
+                ticViewModel.canChangeBotMove = true
                 ticViewModel.setMenuSettings(SAVE)
                 ticViewModel.showMenu(false)
-                ticViewModel.changeBotMove()
                 ticViewModel.makeBotMove()
             }) {
                 AutoResizedText(
@@ -380,7 +386,7 @@ fun CancelButton(
         modifier = modifier,
         onClick = cancelMove,
         enabled = cancelMoveButtonEnabled,
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(60.dp),
         border = null,
         elevation = null,
         colors = ButtonDefaults.buttonColors(
@@ -408,13 +414,17 @@ fun CancelButton(
 
 
 @Composable
-fun XOIcon(
+fun CurrentMoveIcon(
     modifier: Modifier,
+    playingVsAI: Boolean,
     currentMove: CellValues,
+    aiMove: CellValues,
     paddingTop: Dp = 0.dp,
     paddingBottom: Dp = 0.dp,
     paddingStart: Dp = 0.dp,
     paddingEnd: Dp = 0.dp,
+    botIconOffsetX: Dp = 0.dp,
+    botIconOffsetY: Dp = 0.dp,
 ){
     Box(
         modifier = modifier,
@@ -427,7 +437,7 @@ fun XOIcon(
             "currentMove: X" else "currentMove: 0"
         Icon(
             currentMoveIcon,
-            null,
+            contentDescription = null,
             modifier = Modifier
                 .size(50.dp)
                 .padding(
@@ -438,6 +448,32 @@ fun XOIcon(
                 )
                 .testTag(testStringCurrentMove)
         )
+        if(playingVsAI){
+            val iconAlpha = if(currentMove == aiMove) 1f else 0f
+            val infiniteMove = rememberInfiniteTransition()
+            val moveIcon = infiniteMove.animateFloat(
+                initialValue = 0f,
+                targetValue = 2f,
+                animationSpec = infiniteRepeatable(
+                    tween(durationMillis = 450, easing = EaseInOutSine),
+                    repeatMode = RepeatMode.Reverse
+                )
+            )
+            Icon(
+                painterResource(R.drawable.smart_toy_48px),
+                contentDescription = null,
+                modifier = Modifier
+                    .alpha(iconAlpha)
+                    .size(46.dp)
+                    .padding(
+                        top = paddingTop,
+                        bottom = paddingBottom,
+                        start = paddingStart,
+                        end = paddingEnd
+                    )
+                    .offset(botIconOffsetX, botIconOffsetY + (moveIcon.value.dp - 1.dp))
+            )
+        }
     }
 }
 
@@ -453,7 +489,7 @@ fun MenuButton(
     Button(
         modifier = modifier,
         onClick = menuLoading,
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(60.dp),
         border = null,
         elevation = null,
         colors = ButtonDefaults.buttonColors(
@@ -553,6 +589,9 @@ fun GameField(
                 ticViewModel.saveWinRow()
                 ticViewModel.showMenu(true)
                 ticViewModel.setMenuSettings(LOAD)
+                ticViewModel.resetCurrentMoveToX()
+                ticViewModel.changeBotMove()
+                ticViewModel.canChangeBotMove = false
             }) {}
     }
 }

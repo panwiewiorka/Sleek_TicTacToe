@@ -18,7 +18,7 @@ data class TicUiState(
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
     val menuButtonShouldBeShaken: Boolean = false,
-    val aiMove: CellValues = CellValues.X, // changed before the first game to 0
+    val aiMove: CellValues = CellValues.O,
     val currentMove: CellValues = CellValues.X,
     val cancelMoveButtonEnabled: Boolean = false,
     val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,

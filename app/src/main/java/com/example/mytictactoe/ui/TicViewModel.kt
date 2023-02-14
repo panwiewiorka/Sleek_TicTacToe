@@ -20,18 +20,21 @@ class TicViewModel: ViewModel() {
 
     private var botWaits: Job = GlobalScope.launch {  }
 
-    private var iOneMoveBefore: Int = 0
-    private var jOneMoveBefore: Int = 0
-    private var iTwoMovesBefore: Int = 0
-    private var jTwoMovesBefore: Int = 0
-    private var freeCellsLeft: Int = 0
-    private var winIsImpossible: Boolean = true
+    private var iOneMoveBefore = 0
+    private var jOneMoveBefore = 0
+    private var iTwoMovesBefore = 0
+    private var jTwoMovesBefore = 0
+    private var freeCellsLeft = 9
+    private var winIsImpossible = true
+    var canChangeBotMove = false
 
     //--------INTERFACE
 
     fun showMenu(show: Boolean){
-        _uiState.update { currentState ->
-            currentState.copy(menuIsVisible = show)
+        _uiState.update { a ->
+            a.copy(
+                menuIsVisible = show,
+            )
         }
     }
 
@@ -49,6 +52,12 @@ class TicViewModel: ViewModel() {
 
         // recomposing only on discrete value changes
         if(size != uiState.value.gameArray.size){
+            if(uiState.value.playingVsAI && (uiState.value.botOrGameOverScreen != GAMEOVER) &&
+                (freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size))){
+                canChangeBotMove = true
+                changeBotMove()
+            }
+            canChangeBotMove = false
             resetGame(size)
         }
     }
@@ -95,6 +104,7 @@ class TicViewModel: ViewModel() {
 
         // recomposing only on discrete value changes
         if(winRow != uiState.value.winRow){
+            canChangeBotMove = false
             _uiState.update { a ->
                 a.copy(winRow = winRow)
             }
@@ -128,6 +138,14 @@ class TicViewModel: ViewModel() {
         }
     }
 
+    fun resetCurrentMoveToX(){
+        _uiState.update { a ->
+            a.copy(
+                currentMove = CellValues.X
+            )
+        }
+    }
+
     private fun setBotOrGameOverScreen(state: BotOrGameOverScreen){
         _uiState.update { a ->
             a.copy(
@@ -150,8 +168,8 @@ class TicViewModel: ViewModel() {
             cellColor = CellColors.STANDART_COLOR,
         ) } }
         setBotOrGameOverScreen(HIDDEN)
-        _uiState.update { currentState ->
-            currentState.copy(
+        _uiState.update { a ->
+            a.copy(
                 cancelMoveButtonEnabled = false,
                 gameArray = gameArray,
                 currentMove = CellValues.X,
@@ -159,7 +177,7 @@ class TicViewModel: ViewModel() {
         }
         freeCellsLeft = size * size
         Bot.botCannotWin = true
-        // making sure array coordinates fit within gameField size
+        // making sure array coordinates fit within gameField array
         // that is possibly smaller than in previous game vvv
         iOneMoveBefore = 0
         jOneMoveBefore = 0
@@ -218,8 +236,7 @@ class TicViewModel: ViewModel() {
     }
 
     fun changeBotMove(){
-        if((freeCellsLeft == uiState.value.gameArray.size * uiState.value.gameArray.size) &&
-            uiState.value.playingVsAI){
+        if(uiState.value.playingVsAI && canChangeBotMove){
             _uiState.update { a ->
                 a.copy(
                     aiMove = if(uiState.value.aiMove == CellValues.O) CellValues.X else CellValues.O
