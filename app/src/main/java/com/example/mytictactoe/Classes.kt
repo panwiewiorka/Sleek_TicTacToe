@@ -44,12 +44,13 @@ enum class LoadOrSave(val loadOrSave: Boolean) {
 
 enum class Orientation { PORTRAIT, LANDSCAPE }
 
-enum class AutoResizeLimit { WIDTH, HEIGHT }
+enum class AutoResizeHeightOrWidth { WIDTH, HEIGHT }
 
 data class BotOrGameOverScreenState (
     var visible: Boolean = false,
     val clickable: Boolean = false
         )
+
 enum class BotOrGameOverScreen(val state: BotOrGameOverScreenState) {
     BOT(BotOrGameOverScreenState(visible = true, clickable = false)),
     GAMEOVER(BotOrGameOverScreenState(visible = true, clickable = true)),
@@ -57,3 +58,13 @@ enum class BotOrGameOverScreen(val state: BotOrGameOverScreenState) {
 }
 
 enum class EndOfCheck { WIN, DRAW, ONE_BEFORE_BOT_WIN, ONE_BEFORE_PLAYER_WIN, TWO_BEFORE_PLAYER_WIN }
+
+enum class AppTheme {
+    LIGHT,
+    DARK,
+    AUTO;
+
+    companion object {
+        fun fromOrdinal(ordinal: Int) = values()[ordinal]
+    }
+}

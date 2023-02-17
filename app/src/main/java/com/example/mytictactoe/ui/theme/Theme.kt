@@ -6,10 +6,15 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.darkColors
 import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mytictactoe.AppTheme.*
+import com.example.mytictactoe.ui.TicViewModel
 
 @SuppressLint("ConflictingOnColor")
-private val DarkColorPalette = darkColors(
+private val DarkColors = darkColors(
     primary = SliderDark,
     primaryVariant = SliderBgDark,
     secondaryVariant = SliderBgDark,
@@ -19,7 +24,7 @@ private val DarkColorPalette = darkColors(
     background = BackgroundDark,
 )
 
-private val LightColorPalette = lightColors(
+private val LightColors = lightColors(
     primary = SliderLight,
     primaryVariant = SliderBgLight,
     surface = Color.White,
@@ -30,18 +35,15 @@ private val LightColorPalette = lightColors(
 
 @Composable
 fun MyTicTacToeTheme(
-//    darkTheme: Boolean = true,
     darkTheme: Boolean = isSystemInDarkTheme(),
+    ticViewModel: TicViewModel = viewModel(),
     content: @Composable () -> Unit) {
 
-    val colors = if (darkTheme) {
-        DarkColorPalette
-    } else {
-        LightColorPalette
-    }
+    val ticUiState by ticViewModel.uiState.collectAsState()
+
 
     MaterialTheme(
-        colors = colors,
+        colors = if (ticUiState.darkTheme) DarkColors else LightColors,
         typography = Typography,
         shapes = Shapes,
         content = content,

@@ -10,6 +10,7 @@ import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
 
 data class TicUiState(
+    val darkTheme: Boolean = true,
     val orientation: Orientation = PORTRAIT,
     val memorySettings: LoadOrSave = LOAD,
     val menuIsVisible: Boolean = true,

@@ -1,10 +1,7 @@
 package com.example.mytictactoe.ui
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
@@ -24,12 +22,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mytictactoe.*
-import com.example.mytictactoe.AutoResizeLimit.*
+import com.example.mytictactoe.AutoResizeHeightOrWidth.*
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 import com.example.mytictactoe.ui.theme.menuBorder
+import androidx.compose.ui.input.pointer.PointerEventPass
+import kotlinx.coroutines.coroutineScope
+
 
 @Composable
 fun TicApp(
@@ -48,6 +49,7 @@ fun TicApp(
                                },
             buttons = {
                 MainMenu (
+                    darkTheme = ticUiState.darkTheme,
                     size = ticUiState.gameArray.size,
                     winRow = ticUiState.winRow,
                     loadMemorySettings = ticUiState.memorySettings.loadOrSave,
@@ -104,9 +106,10 @@ fun TicApp(
                 )
 
                 //---------------------------icon  XO
-                CurrentMoveIcon(
+                CurrentMoveAndAiIcons(
                     modifier = Modifier.weight(1f),
                     playingVsAI = ticUiState.playingVsAI,
+                    menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
                     aiMove = ticUiState.aiMove,
                     paddingTop = 8.dp,
@@ -165,11 +168,12 @@ fun TicApp(
                 )
 
                 //---------------------------icon  XO
-                CurrentMoveIcon(
+                CurrentMoveAndAiIcons(
                     modifier = Modifier
                         .weight(1f)
                         .padding(bottom = 24.dp),
                     playingVsAI = ticUiState.playingVsAI,
+                    menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
                     aiMove = ticUiState.aiMove,
                     paddingStart = 15.dp,
@@ -197,6 +201,7 @@ fun TicApp(
 @Composable
 fun MainMenu(
     ticViewModel: TicViewModel = viewModel(),
+    darkTheme: Boolean,
     size: Int,
     winRow: Int,
     loadMemorySettings: Boolean,
@@ -228,7 +233,7 @@ fun MainMenu(
             AutoResizedText(
                 text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}",
                 style = MaterialTheme.typography.h5,
-                autoResizeLimit = HEIGHT,
+                autoResizeHeightOrWidth = HEIGHT,
                 modifier = Modifier.testTag("Board Size"),
             )
         }
@@ -265,7 +270,7 @@ fun MainMenu(
             AutoResizedText(
                 text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}",
                 style = MaterialTheme.typography.h5,
-                autoResizeLimit = HEIGHT,
+                autoResizeHeightOrWidth = HEIGHT,
                 modifier = Modifier.testTag("Win Row"),
             )
         }
@@ -307,25 +312,36 @@ fun MainMenu(
                 )
             }
         }
-        //-------------------- THEME, BOT, START buttons
+
         Row(
             modifier = Modifier.width(204.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ){
-            val currentMode = if (isSystemInDarkTheme())
-                painterResource(R.drawable.light_mode_48px)
-            else painterResource(R.drawable.dark_mode_48px)
-            Icon(
-                currentMode,
-                null,
+            //-------------------- THEME button
+            Button(
+                onClick = { ticViewModel.changeTheme() },
                 modifier = Modifier
-                    .size(40.dp)
                     .offset((-5).dp, 0.dp)
-                    .clickable(true) {},
-                tint = MaterialTheme.colors.primary
-            )
-
+                    .size(40.dp)
+                    .padding(0.dp),
+                shape = CircleShape,
+                elevation = null,
+                contentPadding = PaddingValues(0.dp),
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = MaterialTheme.colors.surface,
+                )
+            ) {
+                val currentMode = if (darkTheme)
+                    painterResource(R.drawable.dark_mode_48px)
+                else painterResource(R.drawable.light_mode_48px)
+                Icon(
+                    currentMode,
+                    null,
+                    tint = MaterialTheme.colors.primary
+                )
+            }
+            //-------------------- AI button
             val iconColor = if(playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
             val iconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
             Button(
@@ -348,7 +364,7 @@ fun MainMenu(
                     tint = iconColor,
                 )
             }
-
+            //-------------------- START button
             Button(
                 modifier = Modifier.widthIn(60.dp, 140.dp),
                 elevation = null,
@@ -363,7 +379,7 @@ fun MainMenu(
                 AutoResizedText(
                     text = "START",
                     style = MaterialTheme.typography.button,
-                    autoResizeLimit = WIDTH
+                    autoResizeHeightOrWidth = WIDTH
                 )
             }
         }
@@ -414,9 +430,10 @@ fun CancelButton(
 
 
 @Composable
-fun CurrentMoveIcon(
+fun CurrentMoveAndAiIcons(
     modifier: Modifier,
     playingVsAI: Boolean,
+    menuIsVisible: Boolean,
     currentMove: CellValues,
     aiMove: CellValues,
     paddingTop: Dp = 0.dp,
@@ -450,10 +467,11 @@ fun CurrentMoveIcon(
         )
         if(playingVsAI){
             val iconAlpha = if(currentMove == aiMove) 1f else 0f
+            val iconMove = if(menuIsVisible) 0f else 2f
             val infiniteMove = rememberInfiniteTransition()
             val moveIcon = infiniteMove.animateFloat(
                 initialValue = 0f,
-                targetValue = 2f,
+                targetValue = iconMove,
                 animationSpec = infiniteRepeatable(
                     tween(durationMillis = 450, easing = EaseInOutSine),
                     repeatMode = RepeatMode.Reverse
@@ -519,7 +537,7 @@ fun MenuButton(
                     text = "$winRow",
                     style = MaterialTheme.typography.body1,
                     modifier = Modifier.testTag("winRow square"),
-                    autoResizeLimit = HEIGHT
+                    autoResizeHeightOrWidth = HEIGHT
                 )
             }
         }
@@ -537,7 +555,9 @@ fun GameField(
     botOrGameOverScreen: BotOrGameOverScreen,
 ){
     BoxWithConstraints(
-        modifier = Modifier.padding(vertical = vertPadding, horizontal = horPadding),
+        modifier = Modifier
+            .disableSplitMotionEvents() // anti-multitap
+            .padding(vertical = vertPadding, horizontal = horPadding),
         contentAlignment = Alignment.Center,
     ) {
         val fieldSize = if(maxWidth < maxHeight) maxWidth else maxHeight
@@ -548,13 +568,6 @@ fun GameField(
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
-                                .size(fieldSize / gameArray.size)
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colors.background,
-                                    shape = RoundedCornerShape(0.dp)
-                                )
-                                .background(MaterialTheme.colors.secondary)
                                 .clickable(
                                     enabled = gameArray[i][j].isClickable,
                                     onClick = {
@@ -562,6 +575,13 @@ fun GameField(
                                         ticViewModel.makeBotMove()
                                     }
                                 )
+                                .size(fieldSize / gameArray.size)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colors.background,
+                                    shape = RoundedCornerShape(0.dp)
+                                )
+                                .background(MaterialTheme.colors.secondary)
                                 .testTag("Cell $i $j")
                         ) {
                             AutoResizedText(
@@ -570,7 +590,7 @@ fun GameField(
                                 changedCellSize = fieldSize / gameArray.size,
                                 fontSize = cellFontSize,
                                 color = gameArray[i][j].cellColor.color,
-                                autoResizeLimit = HEIGHT,
+                                autoResizeHeightOrWidth = HEIGHT,
                                 modifier = Modifier.testTag("Text $i $j")
                             )
                         }
@@ -580,6 +600,7 @@ fun GameField(
         }
         ticViewModel.updateFieldSize(fieldSize)
     }
+
     //------------------------BOT or GAME OVER screen (win / draw)
     if (botOrGameOverScreen.state.visible) {
         Box(modifier = Modifier
@@ -605,37 +626,33 @@ fun AutoResizedText(
     changedCellSize: Dp = 1.dp,
     fontSize: TextUnit = style.fontSize,
     color: Color = style.color,
-    autoResizeLimit: AutoResizeLimit,
+    autoResizeHeightOrWidth: AutoResizeHeightOrWidth,
 ) {
     var resizedTextStyle by remember {
         mutableStateOf(style)
     }
+
     var shouldDraw by remember {
         mutableStateOf(false)
     }
-    var fontSizeChanged by remember {
-        mutableStateOf(true)
-    }
-    // saved + observed implemented to overcome bug:
+
+    //var resizedValue by remember { mutableStateOf(1000.sp) }
+
+    // savedCellSize implemented to overcome bug:
     // font wasn't changing in first cells when expanding field Size
     var savedCellSize by remember {
         mutableStateOf(1.dp)
     }
     if (savedCellSize != changedCellSize) {
-        fontSizeChanged = true
         savedCellSize = changedCellSize
-    }
-
-    if(fontSizeChanged){
         resizedTextStyle = resizedTextStyle.copy(
             fontSize = fontSize
         )
-        fontSizeChanged = false
     }
 
     val defaultFontSize = MaterialTheme.typography.body1.fontSize
 
-    if(autoResizeLimit == WIDTH){
+    if(autoResizeHeightOrWidth == WIDTH){
         Text(
             text = text,
             color = color,
@@ -656,7 +673,11 @@ fun AutoResizedText(
                     resizedTextStyle = resizedTextStyle.copy(
                         fontSize = resizedTextStyle.fontSize * 0.95
                     )
+                    //resizedValue = resizedTextStyle.fontSize
                 } else {
+//                    resizedTextStyle = resizedTextStyle.copy(
+//                        fontSize = resizedValue
+//                    )
                     shouldDraw = true
                 }
             }
@@ -683,13 +704,37 @@ fun AutoResizedText(
                     resizedTextStyle = resizedTextStyle.copy(
                         fontSize = resizedTextStyle.fontSize * 0.95
                     )
+//                    resizedValue = resizedTextStyle.fontSize
                 } else {
+//                    resizedTextStyle = resizedTextStyle.copy(
+//                        fontSize = resizedValue
+//                    )
                     shouldDraw = true
                 }
             }
         )
     }
 }
+
+
+fun Modifier.disableSplitMotionEvents() =
+    pointerInput(Unit) {
+        coroutineScope {
+            var currentId: Long = -1L
+            awaitPointerEventScope {
+                while (true) {
+                    awaitPointerEvent(PointerEventPass.Initial).changes.forEach { pointerInfo ->
+                        when {
+                            pointerInfo.pressed && currentId == -1L -> currentId = pointerInfo.id.value
+                            pointerInfo.pressed.not() && currentId == pointerInfo.id.value -> currentId = -1
+                            pointerInfo.id.value != currentId && currentId != -1L -> pointerInfo.consume()
+                            else -> Unit
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 
 //========================================

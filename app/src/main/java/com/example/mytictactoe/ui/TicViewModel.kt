@@ -12,14 +12,14 @@ import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
 import com.example.mytictactoe.EndOfCheck.*
 import kotlinx.coroutines.*
+import kotlin.coroutines.EmptyCoroutineContext
 
 class TicViewModel: ViewModel() {
 
     private val _uiState = MutableStateFlow(TicUiState())
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
-    private var botWaits: Job = GlobalScope.launch {  }
-
+    private var botWaits: Job = CoroutineScope(EmptyCoroutineContext).launch {  }
     private var iOneMoveBefore = 0
     private var jOneMoveBefore = 0
     private var iTwoMovesBefore = 0
@@ -29,6 +29,14 @@ class TicViewModel: ViewModel() {
     var canChangeBotMove = false
 
     //--------INTERFACE
+
+    fun changeTheme(){
+        _uiState.update { a ->
+            a.copy(
+                darkTheme = !uiState.value.darkTheme
+            )
+        }
+    }
 
     fun showMenu(show: Boolean){
         _uiState.update { a ->
@@ -217,7 +225,7 @@ class TicViewModel: ViewModel() {
             if(uiState.value.playingVsAI && (uiState.value.currentMove == uiState.value.aiMove) &&
                 ((uiState.value.botOrGameOverScreen != GAMEOVER))) {
                 setBotOrGameOverScreen(BOT)
-                botWaits = GlobalScope.launch(Dispatchers.Main) {
+                botWaits = CoroutineScope(EmptyCoroutineContext).launch(Dispatchers.Default) {
                     val waitTime = (500L..2000L).random()
                     delay(waitTime)
                     setMoveCoordinates(uiState.value.winRow, uiState.value.gameArray, ::changeTurn, ::checkField)
@@ -282,6 +290,7 @@ class TicViewModel: ViewModel() {
             a.copy(currentMove = updatedTurn)
         }
     }
+
 
     private fun directionalCheck(
         endOfCheck: EndOfCheck,
