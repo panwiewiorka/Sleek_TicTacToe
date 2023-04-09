@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -29,6 +30,7 @@ import com.example.mytictactoe.R
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
 import com.example.mytictactoe.ui.theme.menuBorder
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.coroutineScope
 
 
@@ -49,12 +51,12 @@ fun TicApp(
                                },
             buttons = {
                 MainMenu (
-                    darkTheme = ticUiState.darkTheme,
+                    ticViewModel = ticViewModel,
+                    theme = ticUiState.theme,
                     size = ticUiState.gameArray.size,
                     winRow = ticUiState.winRow,
                     loadMemorySettings = ticUiState.memorySettings.loadOrSave,
                     playingVsAI = ticUiState.playingVsAI,
-                    switchGameMode = {ticViewModel.switchGameMode(ticUiState.playingVsAI)},
                 )
             },
             shape = RoundedCornerShape(15.dp),
@@ -77,6 +79,7 @@ fun TicApp(
         if(orientation == PORTRAIT) {
 
             GameField(
+                ticViewModel = ticViewModel,
                 vertPadding = 50.dp,
                 horPadding = 0.dp,
                 cellFontSize = ticUiState.cellFontSize,
@@ -136,6 +139,7 @@ fun TicApp(
         } else {
 
             GameField(
+                ticViewModel = ticViewModel,
                 vertPadding = 0.dp,
                 horPadding = 70.dp,
                 cellFontSize = ticUiState.cellFontSize,
@@ -201,12 +205,11 @@ fun TicApp(
 @Composable
 fun MainMenu(
     ticViewModel: TicViewModel = viewModel(),
-    darkTheme: Boolean,
+    theme: AppTheme,
     size: Int,
     winRow: Int,
     loadMemorySettings: Boolean,
     playingVsAI: Boolean,
-    switchGameMode: (Boolean) -> Unit,
 ){
     var sizeSliderPosition by remember { mutableStateOf(3f) }
     var winRowSliderPosition by remember { mutableStateOf(3f) }
@@ -319,33 +322,63 @@ fun MainMenu(
             horizontalArrangement = Arrangement.SpaceBetween
         ){
             //-------------------- THEME button
-            Button(
-                onClick = { ticViewModel.changeTheme() },
-                modifier = Modifier
-                    .offset((-5).dp, 0.dp)
-                    .size(40.dp)
-                    .padding(0.dp),
-                shape = CircleShape,
-                elevation = null,
-                contentPadding = PaddingValues(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.surface,
+            val systemThemeIsDark = isSystemInDarkTheme()
+            val themeIconColor = if(theme != AppTheme.AUTO) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+            val themeIconBG = if(theme == AppTheme.AUTO) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+            Box {
+                Button(
+                    onClick = { ticViewModel.changeTheme(systemThemeIsDark) },
+                    modifier = Modifier
+                        .offset((-5).dp, 0.dp)
+                        .size(40.dp)
+                        .padding(0.dp),
+                    shape = CircleShape,
+                    elevation = null,
+                    contentPadding = PaddingValues(0.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = themeIconBG,
+                    )
+                ) {
+                    val currentMode = when(theme){
+                        AppTheme.DARK -> painterResource(R.drawable.dark_mode_48px)
+                        AppTheme.LIGHT -> painterResource(R.drawable.baseline_light_mode_24)
+                        AppTheme.AUTO -> if(systemThemeIsDark) painterResource(R.drawable.dark_mode_48px) else painterResource(R.drawable.light_mode_48px)
+                    }
+                    Icon(
+                        currentMode,
+                        "UI theme",
+                        tint = themeIconColor,
+                    )
+                }
+                val lift by animateDpAsState(
+                    targetValue = if(theme == AppTheme.AUTO) (-30).dp else 0.dp,
+                    animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing),
+                    //finishedListener = {}
                 )
-            ) {
-                val currentMode = if (darkTheme)
-                    painterResource(R.drawable.dark_mode_48px)
-                else painterResource(R.drawable.light_mode_48px)
-                Icon(
-                    currentMode,
-                    null,
-                    tint = MaterialTheme.colors.primary
+                val alpha by animateFloatAsState(
+                    targetValue = if(theme == AppTheme.AUTO) 0f else 1f,
+                    animationSpec = tween(durationMillis = 700, delayMillis = 350, easing = LinearOutSlowInEasing)
+                )
+                Text(
+                    text = if(theme == AppTheme.AUTO) "AUTO" else " ",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colors.primary,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset((-5).dp, lift)
+                        .alpha(alpha)
                 )
             }
+
             //-------------------- AI button
-            val iconColor = if(playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
-            val iconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+            val aiIconColor = if(playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+            val aiIconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
             Button(
-                onClick = { switchGameMode(playingVsAI) },
+                onClick = {
+                    ticViewModel.switchGameMode()
+                    //ticViewModel.loadInitTheme()
+                },
                 modifier = Modifier
                     .offset((-5).dp, 0.dp)
                     .size(44.dp)
@@ -354,14 +387,14 @@ fun MainMenu(
                 elevation = null,
                 contentPadding = PaddingValues(0.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = iconBG,
+                    backgroundColor = aiIconBG,
                 )
             ) {
                 Icon(
                     painterResource(R.drawable.smart_toy_48px),
                     contentDescription = "Playing vs AI",
-                    modifier = Modifier.size(40.dp),
-                    tint = iconColor,
+                    modifier = Modifier.size(40.dp) .offset(0.dp, (-1).dp),
+                    tint = aiIconColor,
                 )
             }
             //-------------------- START button

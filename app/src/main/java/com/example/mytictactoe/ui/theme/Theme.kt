@@ -35,7 +35,7 @@ private val LightColors = lightColors(
 
 @Composable
 fun MyTicTacToeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    SystemThemeIsDark: Boolean = isSystemInDarkTheme(),
     ticViewModel: TicViewModel = viewModel(),
     content: @Composable () -> Unit) {
 
@@ -43,7 +43,11 @@ fun MyTicTacToeTheme(
 
 
     MaterialTheme(
-        colors = if (ticUiState.darkTheme) DarkColors else LightColors,
+        colors = when(ticUiState.theme){
+            DARK -> DarkColors
+            LIGHT -> LightColors
+            AUTO -> if(SystemThemeIsDark) DarkColors else LightColors
+        } ,
         typography = Typography,
         shapes = Shapes,
         content = content,

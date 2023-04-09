@@ -8,9 +8,10 @@ import com.example.mytictactoe.*
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
+import kotlinx.coroutines.flow.emptyFlow
 
 data class TicUiState(
-    val darkTheme: Boolean = true,
+    val theme: AppTheme = AppTheme.AUTO,
     val orientation: Orientation = PORTRAIT,
     val memorySettings: LoadOrSave = LOAD,
     val menuIsVisible: Boolean = true,

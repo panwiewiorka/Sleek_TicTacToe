@@ -3,37 +3,65 @@ package com.example.mytictactoe.ui
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.mytictactoe.*
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import com.example.mytictactoe.AppTheme.Companion.fromOrdinal
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
 import com.example.mytictactoe.EndOfCheck.*
+import com.example.mytictactoe.data.SettingsDao
+import com.example.mytictactoe.data.SettingsTable
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
-class TicViewModel: ViewModel() {
+class TicViewModel(
+    private val dao: SettingsDao
+    ): ViewModel() {
 
     private val _uiState = MutableStateFlow(TicUiState())
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            val settingsTable = SettingsTable(id = 1, theme = AppTheme.AUTO, playingVsAI = false)
+            dao.populateSettings(settingsTable)
+            _uiState.update { a ->
+                a.copy(
+                    theme = dao.loadSettings().theme,
+                    playingVsAI = dao.loadSettings().playingVsAI
+                )
+            }
+        }
+    }
 
     private var botWaits: Job = CoroutineScope(EmptyCoroutineContext).launch {  }
     private var iOneMoveBefore = 0
     private var jOneMoveBefore = 0
     private var iTwoMovesBefore = 0
     private var jTwoMovesBefore = 0
-    private var freeCellsLeft = 9
+    private var freeCellsLeft = 9 // TODO check if ALL THOSE VARs should be saved into DB
     private var winIsImpossible = true
     var canChangeBotMove = false
 
     //--------INTERFACE
 
-    fun changeTheme(){
+    fun changeTheme(systemThemeIsDark: Boolean){
+        val themeSign = if(systemThemeIsDark) -1 else 1
+        val themeOrdinal = when(uiState.value.theme){
+            AppTheme.LIGHT -> 0
+            AppTheme.AUTO -> 1
+            AppTheme.DARK -> 2
+        }
+        var ordinal = themeOrdinal + themeSign
+        if(ordinal > 2) {ordinal = 0}
+        if(ordinal < 0) {ordinal = 2}
+        val settingsTable = SettingsTable(id = 1, theme = fromOrdinal(ordinal), playingVsAI = uiState.value.playingVsAI)
+        viewModelScope.launch {dao.saveSettings(settingsTable)}
         _uiState.update { a ->
             a.copy(
-                darkTheme = !uiState.value.darkTheme
+                theme = fromOrdinal(ordinal)
             )
         }
     }
@@ -138,10 +166,12 @@ class TicViewModel: ViewModel() {
         }
     }
 
-    fun switchGameMode(playingVsAI: Boolean){
+    fun switchGameMode(){
+        val settingsTable = SettingsTable(id = 1, theme = uiState.value.theme, playingVsAI = !uiState.value.playingVsAI)
+        viewModelScope.launch {dao.saveSettings(settingsTable)}
         _uiState.update { a ->
             a.copy(
-                playingVsAI = !playingVsAI
+                playingVsAI = !uiState.value.playingVsAI
             )
         }
     }

@@ -61,8 +61,8 @@ enum class EndOfCheck { WIN, DRAW, ONE_BEFORE_BOT_WIN, ONE_BEFORE_PLAYER_WIN, TW
 
 enum class AppTheme {
     LIGHT,
-    DARK,
-    AUTO;
+    AUTO,
+    DARK;
 
     companion object {
         fun fromOrdinal(ordinal: Int) = values()[ordinal]
