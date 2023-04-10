@@ -3,9 +3,7 @@ package com.example.mytictactoe
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import com.example.mytictactoe.ui.theme.current
-import com.example.mytictactoe.ui.theme.draw
-import com.example.mytictactoe.ui.theme.win
+import com.example.mytictactoe.ui.theme.*
 
 
 data class Cell(
@@ -17,13 +15,17 @@ data class Cell(
 enum class CellValues(val cellValue: Char){
     EMPTY(' '),
     X('X'),
-    O('0')
+    O('0'),
+    //V('V')
 }
 
 enum class CellColors {
     STANDART_COLOR,
     CURRENT_COLOR,
     WIN_COLOR,
+    LOSE_COLOR,
+    INVISIBLE_COLOR1,
+    INVISIBLE_COLOR2,
     DRAW_COLOR;
 
     val color: Color
@@ -33,6 +35,9 @@ enum class CellColors {
             STANDART_COLOR -> MaterialTheme.colors.onSecondary
             CURRENT_COLOR -> MaterialTheme.colors.current
             WIN_COLOR -> MaterialTheme.colors.win
+            LOSE_COLOR -> MaterialTheme.colors.lose
+            INVISIBLE_COLOR1 -> MaterialTheme.colors.invisible1
+            INVISIBLE_COLOR2 -> MaterialTheme.colors.invisible2
             DRAW_COLOR -> MaterialTheme.colors.draw
         }
 }

@@ -25,6 +25,18 @@ val Colors.win: Color
     get() = if (isLight) Color(0xFF208648) else Color(0xFF00CD81)
 // 0xFF00DD41
 
+val Colors.lose: Color
+    @Composable
+    get() = if (isLight) Color(0xFFFF0000) else Color(0xFFFF0000)
+
+val Colors.invisible1: Color
+    @Composable
+    get() = if (isLight) Color(0x00000000) else Color(0x00000000)
+
+val Colors.invisible2: Color
+    @Composable
+    get() = if (isLight) Color(0x00FFFFFF) else Color(0x00FFFFFF)
+
 val Colors.draw: Color
     @Composable
     get() = if (isLight) Color(0xFFA85562) else Color(0xFF440512)

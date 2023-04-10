@@ -11,7 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -54,6 +53,7 @@ fun TicApp(
                     ticViewModel = ticViewModel,
                     theme = ticUiState.theme,
                     size = ticUiState.gameArray.size,
+                    winNotLose = ticUiState.winNotLose,
                     winRow = ticUiState.winRow,
                     loadMemorySettings = ticUiState.memorySettings.loadOrSave,
                     playingVsAI = ticUiState.playingVsAI,
@@ -207,6 +207,7 @@ fun MainMenu(
     ticViewModel: TicViewModel = viewModel(),
     theme: AppTheme,
     size: Int,
+    winNotLose: Boolean,
     winRow: Int,
     loadMemorySettings: Boolean,
     playingVsAI: Boolean,
@@ -270,12 +271,42 @@ fun MainMenu(
         Box(
             modifier = Modifier.heightIn(10.dp, 60.dp)
         ){
-            AutoResizedText(
-                text = "Win row: ${(winRowSliderPosition + 0.5).toInt()}",
-                style = MaterialTheme.typography.h5,
-                autoResizeHeightOrWidth = HEIGHT,
-                modifier = Modifier.testTag("Win Row"),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically){
+                AutoResizedText(
+                    text = "${(winRowSliderPosition + 0.5).toInt()} in a row ",
+                    style = MaterialTheme.typography.h5,
+                    autoResizeHeightOrWidth = HEIGHT,
+                    modifier = Modifier.testTag("Win Row"),
+                )
+                Button(
+                    modifier = Modifier.padding(0.dp),
+                    onClick = { ticViewModel.changeWinOrLose() },
+                    enabled = true,
+                    shape = RoundedCornerShape(30.dp),
+                    border = null,
+                    elevation = null,
+                    contentPadding = PaddingValues(0.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0x00000000),
+                        disabledBackgroundColor = Color(0x00000000)
+                    )
+                ) {
+                    Box(
+                        contentAlignment = Alignment.CenterStart,
+                        modifier = Modifier
+                            .padding(0.dp)
+                    ) {
+                        AutoResizedText(
+                            text = if(winNotLose) "wins " else "loses",
+                            style = MaterialTheme.typography.h5,
+                            color = MaterialTheme.colors.primary,
+                            autoResizeHeightOrWidth = HEIGHT,
+                            modifier = Modifier
+                                .testTag("Win or lose")
+                        )
+                    }
+                }
+            }
         }
         Box(
             modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
@@ -376,7 +407,7 @@ fun MainMenu(
             val aiIconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
             Button(
                 onClick = {
-                    ticViewModel.switchGameMode()
+                    ticViewModel.switchPlayingVsAiMode()
                     //ticViewModel.loadInitTheme()
                 },
                 modifier = Modifier

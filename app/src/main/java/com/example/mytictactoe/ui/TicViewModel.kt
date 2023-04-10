@@ -13,7 +13,6 @@ import com.example.mytictactoe.data.SettingsDao
 import com.example.mytictactoe.data.SettingsTable
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
 class TicViewModel(
@@ -134,6 +133,14 @@ class TicViewModel(
         }
     }
 
+    fun changeWinOrLose(){
+        _uiState.update { a ->
+            a.copy(
+                winNotLose = !uiState.value.winNotLose
+            )
+        }
+    }
+
     fun setWinRow(slider: Float){
         // rounding to the nearest int, not necessarily to the lowest
         val winRow = (slider + 0.5).toInt()
@@ -166,7 +173,7 @@ class TicViewModel(
         }
     }
 
-    fun switchGameMode(){
+    fun switchPlayingVsAiMode(){
         val settingsTable = SettingsTable(id = 1, theme = uiState.value.theme, playingVsAI = !uiState.value.playingVsAI)
         viewModelScope.launch {dao.saveSettings(settingsTable)}
         _uiState.update { a ->
@@ -327,25 +334,29 @@ class TicViewModel(
         a: Int,
         b: Int,
     ): Boolean {
-        //in case of DRAW searching for currentMove & EMPTY cells, otherwise only for currentMove cells (currentMove || currentMove)
+        //in case of DRAW - searching for currentMove & EMPTY cells, otherwise - only for currentMove cells (currentMove || currentMove)
         val emptyOrCurrentMoveCell = if(endOfCheck == DRAW) CellValues.EMPTY else uiState.value.currentMove
+        //val vOrCurrentMoveCell = if(endOfCheck == DRAW) CellValues.V else uiState.value.currentMove
 
         return ((uiState.value.gameArray[a][b].cellText == uiState.value.currentMove) ||
-                (uiState.value.gameArray[a][b].cellText == (emptyOrCurrentMoveCell)))
+                (uiState.value.gameArray[a][b].cellText == (emptyOrCurrentMoveCell))
+                //|| (uiState.value.gameArray[a][b].cellText == (vOrCurrentMoveCell))
+                )
     }
 
     private fun checkVertically(
         endOfCheck: EndOfCheck,
         i: Int,
         j: Int,
-    ){
+        winNotLose: Boolean,
+        ){
         val gameArray = uiState.value.gameArray
         // check forward
         var newI = i
         var currentRow = 1
         var winInTwoMoves = 0
 
-        // searching within the boundaries of array for the currentMove cells (and EMPTY cells in case of DRAW)
+        // searching FORWARD within the boundaries of array for the currentMove cells (and EMPTY cells in case of DRAW)
         while((newI + 1 < gameArray.size) && directionalCheck(endOfCheck, newI + 1, j)){
             currentRow++
             newI++
@@ -357,7 +368,7 @@ class TicViewModel(
             winInTwoMoves++
         }
 
-        // then backward
+        // then BACKWARD
         newI = i
         while((newI > 0) && directionalCheck(endOfCheck, newI - 1, j)){
             currentRow++
@@ -375,18 +386,18 @@ class TicViewModel(
             when(endOfCheck){
                 WIN -> {
                     for(a in newI until newI + currentRow) {
-                        gameArray[a][j].cellColor = CellColors.WIN_COLOR
+                        gameArray[a][j].cellColor = if(uiState.value.winNotLose) CellColors.WIN_COLOR else CellColors.LOSE_COLOR
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
-                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j, winNotLose, gameArray)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
                 TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
         }
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
-            Bot.chooseCoordinatesIfCanLose(i, j)
+            Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
         }
     }
 
@@ -394,6 +405,7 @@ class TicViewModel(
         endOfCheck: EndOfCheck,
         i: Int,
         j: Int,
+        winNotLose: Boolean,
     ){
         val gameArray = uiState.value.gameArray
 
@@ -426,18 +438,18 @@ class TicViewModel(
             when(endOfCheck){
                 WIN -> {
                     for(a in newJ until newJ + currentRow) {
-                        gameArray[i][a].cellColor = CellColors.WIN_COLOR
+                        gameArray[i][a].cellColor = if(uiState.value.winNotLose) CellColors.WIN_COLOR else CellColors.LOSE_COLOR
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
-                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j, winNotLose, gameArray)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
                 TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
         }
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
-            Bot.chooseCoordinatesIfCanLose(i, j)
+            Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
         }
     }
 
@@ -445,7 +457,8 @@ class TicViewModel(
         endOfCheck: EndOfCheck,
         i: Int,
         j: Int,
-    ){
+        winNotLose: Boolean,
+        ){
         val gameArray = uiState.value.gameArray
 
         var newI = i
@@ -481,18 +494,18 @@ class TicViewModel(
             when(endOfCheck){
                 WIN -> {
                     for(a in newI until newI + currentRow) {
-                        gameArray[a][a-newI+newJ].cellColor = CellColors.WIN_COLOR
+                        gameArray[a][a-newI+newJ].cellColor = if(uiState.value.winNotLose) CellColors.WIN_COLOR else CellColors.LOSE_COLOR
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
-                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j, winNotLose, gameArray)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
                 TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
         }
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
-            Bot.chooseCoordinatesIfCanLose(i, j)
+            Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
         }
     }
 
@@ -500,7 +513,8 @@ class TicViewModel(
         endOfCheck: EndOfCheck,
         i: Int,
         j: Int,
-    ){
+        winNotLose: Boolean,
+        ){
         val gameArray = uiState.value.gameArray
 
         var newI = i
@@ -536,18 +550,18 @@ class TicViewModel(
             when(endOfCheck){
                 WIN -> {
                     for(a in newI until newI + currentRow) {
-                        gameArray[a][newJ-a+newI].cellColor = CellColors.WIN_COLOR
+                        gameArray[a][newJ-a+newI].cellColor = if(uiState.value.winNotLose) CellColors.WIN_COLOR else CellColors.LOSE_COLOR
                     }
                     setBotOrGameOverScreen(GAMEOVER)
                 }
                 DRAW -> { winIsImpossible = false}
-                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j)
-                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j)
+                ONE_BEFORE_BOT_WIN -> Bot.chooseCoordinatesIfCanWin(i, j, winNotLose, gameArray)
+                ONE_BEFORE_PLAYER_WIN -> Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
                 TWO_BEFORE_PLAYER_WIN -> return // case never reached
             }
         }
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (currentRow == uiState.value.winRow - 1) && (winInTwoMoves == 2)){
-            Bot.chooseCoordinatesIfCanLose(i, j)
+            Bot.chooseCoordinatesIfCanLose(i, j, winNotLose, gameArray)
         }
     }
 
@@ -555,6 +569,7 @@ class TicViewModel(
         endOfCheck: EndOfCheck,
         i: Int,
         j: Int,
+        winNotLose: Boolean = uiState.value.winNotLose,
     ){
         /* This is a multi-purpose algorithm for checking of Win, Draw, possible Win in one move, two moves...
         From currently clicked cell we are looking forward and backward, in all directions,
@@ -563,10 +578,10 @@ class TicViewModel(
         Then, if enough cells found, endOfCheck chooses the outcome (depending on What we are searching for)
          */
 
-        checkVertically(endOfCheck, i, j)
-        checkHorizontally(endOfCheck, i, j)
-        checkMainDiagonal(endOfCheck, i, j)
-        checkOtherDiagonal(endOfCheck, i, j)
+        checkVertically(endOfCheck, i, j, winNotLose)
+        checkHorizontally(endOfCheck, i, j, winNotLose)
+        checkMainDiagonal(endOfCheck, i, j, winNotLose)
+        checkOtherDiagonal(endOfCheck, i, j, winNotLose)
     }
 
     internal fun checkDraw(){

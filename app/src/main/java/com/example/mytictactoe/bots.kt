@@ -17,24 +17,41 @@ object Bot {
         botJ = n % size
     }
 
-    fun chooseCoordinatesIfCanWin(i: Int, j: Int){
+    fun chooseCoordinatesIfCanWin(i: Int, j: Int, winNotLose: Boolean, gameArray: Array<Array<Cell>>){
         botI = i
         botJ = j
-        botCannotWin = false
+        if(winNotLose) {
+            botCannotWin = false
+        } else {
+            gameArray[botI][botJ].cellColor = CellColors.INVISIBLE_COLOR1
+            //gameArray[botI][botJ].cellText = CellValues.V
+        }
     }
 
-    fun chooseCoordinatesIfCanLose(i: Int, j: Int){
+    fun chooseCoordinatesIfCanLose(i: Int, j: Int, winNotLose: Boolean, gameArray: Array<Array<Cell>>){
         botI = i
         botJ = j
-        playerCannotWin = false
+        if(winNotLose) {
+            playerCannotWin = false
+        } else {
+            gameArray[botI][botJ].cellColor = CellColors.INVISIBLE_COLOR2
+            //gameArray[botI][botJ].cellText = CellValues.V
+        }
     }
 
     private fun chooseRandomFreeCell(gameArray: Array<Array<Cell>>){
-        val mapOfEmptyCells = gameArray
+        val mapOfCells = gameArray
             .flatten()
             .mapIndexed{index, value -> index to value}
             .toMap()
-            .filterValues{it.cellText == CellValues.EMPTY}
+        var mapOfEmptyCells = mapOfCells
+            .filterValues{(it.cellText == CellValues.EMPTY) && (it.cellColor != CellColors.INVISIBLE_COLOR1) && (it.cellColor != CellColors.INVISIBLE_COLOR2)}
+        if(mapOfEmptyCells.isEmpty()){
+            mapOfEmptyCells = mapOfCells.filterValues{(it.cellText == CellValues.EMPTY) && (it.cellColor != CellColors.INVISIBLE_COLOR1)}
+        }
+        if(mapOfEmptyCells.isEmpty()){
+            mapOfEmptyCells = mapOfCells.filterValues{it.cellText == CellValues.EMPTY}
+        }
         numberToCoordinates(mapOfEmptyCells.keys.random(), gameArray.size)
     }
 
@@ -44,7 +61,7 @@ object Bot {
         changeTurn: () -> Unit,
         checkField: (EndOfCheck, Int, Int) -> Unit,
     ){
-        // check for bot winning coordinates
+        // if bot can win - pick those coordinates
         for (i in gameArray.indices){
             for (j in gameArray[i].indices){
                 if((gameArray[i][j].cellText == CellValues.EMPTY) && botCannotWin){
@@ -52,7 +69,7 @@ object Bot {
                 }
             }
         }
-        // check if player can win in next move
+        // if player can win in next (two) moves - pick those coordinates
         if(botCannotWin){
             changeTurn()
             for (i in gameArray.indices){
@@ -73,7 +90,7 @@ object Bot {
             }
             changeTurn()
         }
-        // ^^^ check for winning or losing_in_next_move coordinates, if none - pick random: vvv
+        // ^^^ check for winning or losing_in_next_moves coordinates, if none - pick random: vvv
         if(botCannotWin && playerCannotWin) chooseRandomFreeCell(gameArray)
         playerCannotWin = true
     }

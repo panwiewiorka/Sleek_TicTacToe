@@ -8,17 +8,17 @@ import com.example.mytictactoe.*
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
-import kotlinx.coroutines.flow.emptyFlow
 
 data class TicUiState(
     val theme: AppTheme = AppTheme.AUTO,
     val orientation: Orientation = PORTRAIT,
     val memorySettings: LoadOrSave = LOAD,
     val menuIsVisible: Boolean = true,
-    val playingVsAI: Boolean = false,
     val fieldSize: Dp = 0.dp,
+    val winNotLose: Boolean = true,
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
+    val playingVsAI: Boolean = false,
     val menuButtonShouldBeShaken: Boolean = false,
     val aiMove: CellValues = CellValues.O,
     val currentMove: CellValues = CellValues.X,
