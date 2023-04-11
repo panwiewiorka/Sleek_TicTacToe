@@ -18,12 +18,11 @@ val BackgroundLight = Color(0xFFCCCCCC)
 
 val Colors.current: Color
     @Composable
-    get() = if (isLight) Color(0xFF30676E) else Color(0xFFFFFF88)
+    get() = if (isLight) Color(0xFF396F9E) else Color(0xFFFFFF88)
 
 val Colors.win: Color
     @Composable
-    get() = if (isLight) Color(0xFF208648) else Color(0xFF00CD81)
-// 0xFF00DD41
+    get() = if (isLight) Color(0xFF40A668) else Color(0xFF00CD81)
 
 val Colors.lose: Color
     @Composable
@@ -43,4 +42,4 @@ val Colors.draw: Color
 
 val Colors.menuBorder: Color
     @Composable
-    get() = if (isLight) Color(0x00000000) else Color(0xFF222222)
+    get() = if (isLight) Color(0x00000000) else Color(0x00222222) // still using? Menu border

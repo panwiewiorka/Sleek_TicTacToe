@@ -1,7 +1,7 @@
 package com.example.mytictactoe
 
 import com.example.mytictactoe.ui.TicViewModel
-import com.example.mytictactoe.CellValues.*
+import com.example.mytictactoe.DefaultCellValues.*
 import org.junit.Test
 
 import org.junit.Assert.*

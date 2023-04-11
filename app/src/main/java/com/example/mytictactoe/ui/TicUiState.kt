@@ -20,14 +20,14 @@ data class TicUiState(
     val savedWinRow: Int = 3,
     val playingVsAI: Boolean = false,
     val menuButtonShouldBeShaken: Boolean = false,
-    val aiMove: CellValues = CellValues.O,
-    val currentMove: CellValues = CellValues.X,
+    val firstMove: DefaultCellValues = DefaultCellValues.X,
+    val currentMove: DefaultCellValues = DefaultCellValues.X,
     val cancelMoveButtonEnabled: Boolean = false,
     val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
     val cellFontSize: TextUnit = 68.sp,
     val gameArray: Array<Array<Cell>> = Array(3) { i -> Array(3) { j -> Cell(
         isClickable = true,
-        cellText = CellValues.EMPTY,
+        cellText = DefaultCellValues.EMPTY,
         cellColor = CellColors.STANDART_COLOR,
     ) } }
 )

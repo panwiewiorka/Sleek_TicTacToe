@@ -7,16 +7,25 @@ import com.example.mytictactoe.ui.theme.*
 
 
 data class Cell(
-    var cellText: CellValues = CellValues.EMPTY,
+    var cellText: DefaultCellValues = DefaultCellValues.EMPTY,
     var isClickable: Boolean = true,
     var cellColor: CellColors = CellColors.STANDART_COLOR,
 )
 
-enum class CellValues(val cellValue: Char){
+object CustomCellValues{
+    var player1: Char = '1'
+    var player2: Char = '2'
+    fun gg(){
+        player1 = 'G'
+    }
+}
+
+enum class DefaultCellValues(val cellValue: Char){
     EMPTY(' '),
     X('X'),
     O('0'),
-    //V('V')
+    ONE(CustomCellValues.player1),
+    TWO(CustomCellValues.player2),
 }
 
 enum class CellColors {
@@ -25,7 +34,7 @@ enum class CellColors {
     WIN_COLOR,
     LOSE_COLOR,
     INVISIBLE_COLOR1,
-    INVISIBLE_COLOR2,
+    INVISIBLE_COLOR2, // two colors for different priority in choosing botI & botJ
     DRAW_COLOR;
 
     val color: Color
