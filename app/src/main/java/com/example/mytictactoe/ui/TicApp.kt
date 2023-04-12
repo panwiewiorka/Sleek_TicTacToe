@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
@@ -28,6 +30,7 @@ import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import com.example.mytictactoe.ui.theme.*
 import kotlinx.coroutines.coroutineScope
 
@@ -38,7 +41,7 @@ fun TicApp(
 ) {
     val ticUiState by ticViewModel.uiState.collectAsState()
 
-    //----------------------------popup MENU SCREEN
+    //-------------------------------popup MENU SCREEN
     if (ticUiState.menuIsVisible){
         AlertDialog(
             onDismissRequest = {
@@ -112,12 +115,23 @@ fun TicApp(
                     paddingStart = 10.dp,
                 )
 
+
+
+//                CustomCellButton(
+//                    currentMove = ticUiState.currentMove,
+//                    showCustomCellDialog = {ticViewModel.showCustomCellDialog(true)}
+//                )
+
+
+
+
                 //---------------------------icon  XO
                 CurrentMoveAndAiIcons(
                     modifier = Modifier.weight(1f),
                     playingVsAI = ticUiState.playingVsAI,
                     menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
+                    showCustomCellDialog = {ticViewModel.showCustomCellDialog(true)},
                     paddingTop = 8.dp,
                     paddingBottom = 10.dp,
                     botIconOffsetX = 30.dp,
@@ -171,6 +185,7 @@ fun TicApp(
                     playingVsAI = ticUiState.playingVsAI,
                     menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
+                    showCustomCellDialog = {ticViewModel.showCustomCellDialog(true)},
                     paddingStart = 15.dp,
                     botIconOffsetY = (-34).dp,
                 )
@@ -187,6 +202,24 @@ fun TicApp(
                     )
             }
         }
+    }
+
+    //----------------------------CUSTOM SYMBOL Dialog
+    if(ticUiState.customCellDialogIsVisible){
+        AlertDialog(
+            onDismissRequest = { ticViewModel.showCustomCellDialog(false) },
+            buttons = {
+                CustomCellDialog(
+                    ticViewModel = ticViewModel,
+                    currentMove = ticUiState.currentMove,
+                    theme = ticUiState.theme,
+                )
+            },
+            shape = RoundedCornerShape(0.dp),
+            backgroundColor = Color.Transparent,
+            modifier = Modifier
+                .padding(0.dp)
+        )
     }
 }
 
@@ -217,7 +250,9 @@ fun MainMenu(
         ticViewModel.setMenuSettings(SAVE) // disabling IF condition to load settings only once, when menu is shown
     }
     Column(
-        modifier = Modifier.padding(25.dp).widthIn(160.dp, 240.dp),
+        modifier = Modifier
+            .padding(25.dp)
+            .widthIn(160.dp, 240.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -404,10 +439,7 @@ fun MainMenu(
             val aiIconColor = if(playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
             val aiIconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
             Button(
-                onClick = {
-                    ticViewModel.switchPlayingVsAiMode()
-                    CustomCellValues.gg()
-                },
+                onClick = { ticViewModel.switchPlayingVsAiMode() },
                 modifier = Modifier
                     .offset((-3).dp, 0.dp)
                     .size(44.dp)
@@ -430,7 +462,9 @@ fun MainMenu(
             }
             //-------------------- START button
             Button(
-                modifier = Modifier.height(44.dp).widthIn(80.dp, 140.dp),
+                modifier = Modifier
+                    .height(44.dp)
+                    .widthIn(80.dp, 140.dp),
                 elevation = null,
                 contentPadding = PaddingValues(0.dp),
                 shape = RoundedCornerShape(15.dp),
@@ -471,13 +505,13 @@ fun CancelButton(
         border = null,
         elevation = null,
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = Color(0x00000000),
-            disabledBackgroundColor = Color(0x00000000)
-        )
+            backgroundColor = Color.Transparent,
+            disabledBackgroundColor = Color.Transparent
+        ),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(bottom = paddingBoxBottom)
+            modifier = Modifier.padding(bottom = paddingBoxBottom),
         ) {
             val alpha = if (cancelMoveButtonEnabled) 1f else 0.33f
             Icon(
@@ -495,11 +529,68 @@ fun CancelButton(
 
 
 @Composable
+fun CustomCellDialog(
+    ticViewModel: TicViewModel,
+    currentMove: Char,
+    theme: AppTheme,
+    ){
+    var str by remember {
+        mutableStateOf("")
+    }
+    var symbol by remember {
+        mutableStateOf(TextFieldValue(str))
+    }
+    val focusRequester = remember { FocusRequester() }
+    Box(
+        contentAlignment = Alignment.Center,
+    ){
+        OutlinedTextField(
+            value = symbol,
+            onValueChange = {
+                symbol = it
+                ticViewModel.changeCellSymbol(it.text.toCharArray().first())
+                str = ""
+                ticViewModel.showCustomCellDialog(false)
+            },
+            singleLine = true,
+            label = null,
+            modifier = Modifier
+                .width(0.dp)
+                .alpha(0f)
+                .focusRequester(focusRequester),
+        )
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+
+        val circleBG = if((theme == AppTheme.DARK) || ((theme == AppTheme.AUTO) && (isSystemInDarkTheme()))) Color.White else Color.Black
+        Canvas(
+            modifier = Modifier.size(100.dp),
+            onDraw = { drawCircle(color = circleBG) }
+        )
+        Text(text = currentMove.toString(), fontSize = 62.sp, color = MaterialTheme.colors.surface)
+        Button(
+            onClick = { ticViewModel.showCustomCellDialog(false) },
+            shape = CircleShape,
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.alpha(0f),
+        ) {
+            Canvas(
+                modifier = Modifier.size(100.dp),
+                onDraw = { drawCircle(color = Color.Transparent) }
+            )
+        }
+    }
+}
+
+
+@Composable
 fun CurrentMoveAndAiIcons(
     modifier: Modifier,
     playingVsAI: Boolean,
     menuIsVisible: Boolean,
-    currentMove: DefaultCellValues,
+    currentMove: Char,
+    showCustomCellDialog: (Boolean) -> Unit,
     paddingTop: Dp = 0.dp,
     paddingBottom: Dp = 0.dp,
     paddingStart: Dp = 0.dp,
@@ -507,57 +598,73 @@ fun CurrentMoveAndAiIcons(
     botIconOffsetX: Dp = 0.dp,
     botIconOffsetY: Dp = 0.dp,
 ){
-    Box(
+    Button(
         modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        val currentMoveIcon = if (currentMove == DefaultCellValues.X)
-            painterResource(R.drawable.close_48px)
-        else painterResource(R.drawable.fiber_manual_record_48px)
-        val testStringCurrentMove = if (currentMove == DefaultCellValues.X)
-            "currentMove: X" else "currentMove: 0"
-        Icon(
-            currentMoveIcon,
-            contentDescription = null,
-            modifier = Modifier
-                .size(50.dp)
-                .padding(
-                    top = paddingTop,
-                    bottom = paddingBottom,
-                    start = paddingStart,
-                    end = paddingEnd
-                )
-                .testTag(testStringCurrentMove)
+        onClick = {showCustomCellDialog(true)},
+        shape = RoundedCornerShape(60.dp),
+        border = null,
+        elevation = null,
+        contentPadding = PaddingValues(0.dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = Color.Transparent,
+            disabledBackgroundColor = Color.Transparent
         )
-        if(playingVsAI){
-            val iconAlpha = if(currentMove == DefaultCellValues.O) 1f else 0f
-            val infiniteMove = rememberInfiniteTransition()
-            val moveIcon by infiniteMove.animateFloat(
-                initialValue = 0f,
-                targetValue = 2f,
-                animationSpec = infiniteRepeatable(
-                    tween(durationMillis = 450, easing = EaseInOutSine),
-                    repeatMode = RepeatMode.Reverse
-                )
-            )
-            val moveAmplitude by animateFloatAsState(
-                targetValue = if(menuIsVisible) 0f else 1f,
-                animationSpec = tween(durationMillis = 225, easing = EaseInOutSine),
-                )
+    ) {
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            val currentMoveIcon = if (currentMove == CustomCellValues.player1)
+                painterResource(R.drawable.close_48px)
+            else painterResource(R.drawable.fiber_manual_record_48px)
+            val testStringCurrentMove = if (currentMove == CustomCellValues.player1)
+                "currentMove: X" else "currentMove: 0"
             Icon(
-                painterResource(R.drawable.smart_toy_48px),
+                currentMoveIcon,
                 contentDescription = null,
                 modifier = Modifier
-                    .alpha(iconAlpha)
-                    .size(46.dp)
+                    .size(50.dp)
                     .padding(
                         top = paddingTop,
                         bottom = paddingBottom,
                         start = paddingStart,
                         end = paddingEnd
                     )
-                    .offset(botIconOffsetX, botIconOffsetY + ((moveIcon * moveAmplitude).dp - 1.dp))
+                    .testTag(testStringCurrentMove)
             )
+            if(playingVsAI){
+                val iconAlpha = if(currentMove == CustomCellValues.player2) 1f else 0f
+                val infiniteMove = rememberInfiniteTransition()
+                val moveIcon by infiniteMove.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 2f,
+                    animationSpec = infiniteRepeatable(
+                        tween(durationMillis = 450, easing = EaseInOutSine),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                val moveAmplitude by animateFloatAsState(
+                    targetValue = if(menuIsVisible) 0f else 1f,
+                    animationSpec = tween(durationMillis = 225, easing = EaseInOutSine),
+                )
+                Icon(
+                    painterResource(R.drawable.smart_toy_48px),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .alpha(iconAlpha)
+                        .size(46.dp)
+                        .padding(
+                            top = paddingTop,
+                            bottom = paddingBottom,
+                            start = paddingStart,
+                            end = paddingEnd
+                        )
+                        .offset(
+                            botIconOffsetX,
+                            botIconOffsetY + ((moveIcon * moveAmplitude).dp - 1.dp)
+                        )
+                )
+            }
         }
     }
 }
@@ -610,7 +717,9 @@ fun MenuButton(
                 AutoResizedText(
                     text = "$winRow",
                     style = MaterialTheme.typography.body1,
-                    modifier = Modifier.testTag("winRow square").offset(0.dp, (-0.5).dp),
+                    modifier = Modifier
+                        .testTag("winRow square")
+                        .offset(0.dp, (-0.5).dp),
                     autoResizeHeightOrWidth = HEIGHT
                 )
             }
@@ -659,7 +768,7 @@ fun GameField(
                                 .testTag("Cell $i $j")
                         ) {
                             AutoResizedText(
-                                text = gameArray[i][j].cellText.cellValue.toString(),
+                                text = gameArray[i][j].cellText.toString(),
                                 style = MaterialTheme.typography.h3,
                                 changedCellSize = fieldSize / gameArray.size,
                                 fontSize = cellFontSize,

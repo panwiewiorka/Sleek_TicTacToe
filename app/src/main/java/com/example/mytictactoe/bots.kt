@@ -45,12 +45,12 @@ object Bot {
             .mapIndexed{index, value -> index to value}
             .toMap()
         var mapOfEmptyCells = mapOfCells
-            .filterValues{(it.cellText == DefaultCellValues.EMPTY) && (it.cellColor != CellColors.INVISIBLE_COLOR1) && (it.cellColor != CellColors.INVISIBLE_COLOR2)}
+            .filterValues{(it.cellText == CustomCellValues.EMPTY) && (it.cellColor != CellColors.INVISIBLE_COLOR1) && (it.cellColor != CellColors.INVISIBLE_COLOR2)}
         if(mapOfEmptyCells.isEmpty()){
-            mapOfEmptyCells = mapOfCells.filterValues{(it.cellText == DefaultCellValues.EMPTY) && (it.cellColor != CellColors.INVISIBLE_COLOR1)}
+            mapOfEmptyCells = mapOfCells.filterValues{(it.cellText == CustomCellValues.EMPTY) && (it.cellColor != CellColors.INVISIBLE_COLOR1)}
         }
         if(mapOfEmptyCells.isEmpty()){
-            mapOfEmptyCells = mapOfCells.filterValues{it.cellText == DefaultCellValues.EMPTY}
+            mapOfEmptyCells = mapOfCells.filterValues{it.cellText == CustomCellValues.EMPTY}
         }
         numberToCoordinates(mapOfEmptyCells.keys.random(), gameArray.size)
     }
@@ -64,7 +64,7 @@ object Bot {
         // if bot can win - pick those coordinates
         for (i in gameArray.indices){
             for (j in gameArray[i].indices){
-                if((gameArray[i][j].cellText == DefaultCellValues.EMPTY) && botCannotWin){
+                if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && botCannotWin){
                     checkField(EndOfCheck.ONE_BEFORE_BOT_WIN, i, j)
                 }
             }
@@ -74,7 +74,7 @@ object Bot {
             changeTurn()
             for (i in gameArray.indices){
                 for (j in gameArray[i].indices){
-                    if((gameArray[i][j].cellText == DefaultCellValues.EMPTY) && playerCannotWin){
+                    if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && playerCannotWin){
                         checkField(EndOfCheck.ONE_BEFORE_PLAYER_WIN, i, j)
                     }
                 }
@@ -82,7 +82,7 @@ object Bot {
             if((winRow < gameArray.size) && playerCannotWin){
                 for (i in gameArray.indices){
                     for (j in gameArray[i].indices){
-                        if((gameArray[i][j].cellText == DefaultCellValues.EMPTY) && playerCannotWin){
+                        if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && playerCannotWin){
                             checkField(EndOfCheck.TWO_BEFORE_PLAYER_WIN, i, j)
                         }
                     }

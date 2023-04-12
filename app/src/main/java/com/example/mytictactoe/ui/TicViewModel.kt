@@ -43,7 +43,7 @@ class TicViewModel(
     private var freeCellsLeft = 9 // TODO check if ALL THOSE VARs should be saved into DB
     private var winIsImpossible = true
     private var canChangeFirstMove = false
-    private var savedMove = DefaultCellValues.EMPTY
+    private var savedMove = CustomCellValues.EMPTY
 
     //--------INTERFACE
 
@@ -101,6 +101,46 @@ class TicViewModel(
         _uiState.update { a ->
             a.copy(
                 menuButtonShouldBeShaken = shake
+            )
+        }
+    }
+
+    fun showCustomCellDialog(showDialog: Boolean){
+        _uiState.update { a ->
+            a.copy(
+                customCellDialogIsVisible = showDialog
+            )
+        }
+    }
+
+    fun changeCellSymbol(cellSymbol: Char){
+        val gameArray = uiState.value.gameArray
+
+        for (i in gameArray.indices){
+            for(j in gameArray[i].indices){
+                if(gameArray[i][j].cellText == uiState.value.currentMove){
+                    gameArray[i][j].cellText = cellSymbol
+                }
+            }
+        }
+
+        if(uiState.value.currentMove == CustomCellValues.player1){
+            CustomCellValues.player1 = cellSymbol
+        } else {
+            CustomCellValues.player2 = cellSymbol
+        }
+
+        if(uiState.value.firstMove == uiState.value.currentMove) {
+            _uiState.update { a ->
+                a.copy(
+                    firstMove = cellSymbol,
+                )
+            }
+        }
+
+        _uiState.update { a ->
+            a.copy(
+                currentMove = cellSymbol,
             )
         }
     }
@@ -225,7 +265,7 @@ class TicViewModel(
         setCellFontSize(size)
         val gameArray = Array(size) { Array(size) { Cell(
             isClickable = true,
-            cellText = DefaultCellValues.EMPTY,
+            cellText = CustomCellValues.EMPTY,
             cellColor = CellColors.STANDART_COLOR,
         ) } }
         setBotOrGameOverScreen(HIDDEN)
@@ -276,7 +316,7 @@ class TicViewModel(
 
     fun makeBotMove(){
         with(Bot) {
-            if(uiState.value.playingVsAI && (uiState.value.currentMove == DefaultCellValues.O) &&
+            if(uiState.value.playingVsAI && (uiState.value.currentMove == CustomCellValues.player2) &&
                 ((uiState.value.botOrGameOverScreen != GAMEOVER))) {
                 setBotOrGameOverScreen(BOT)
                 botWaits = CoroutineScope(EmptyCoroutineContext).launch(Dispatchers.Default) {
@@ -313,7 +353,7 @@ class TicViewModel(
                 }
             }
         } else changeTurn()
-        gameArray[iOneMoveBefore][jOneMoveBefore].cellText = DefaultCellValues.EMPTY
+        gameArray[iOneMoveBefore][jOneMoveBefore].cellText = CustomCellValues.EMPTY
         gameArray[iOneMoveBefore][jOneMoveBefore].isClickable = true
         gameArray[iTwoMovesBefore][jTwoMovesBefore].cellColor = CellColors.CURRENT_COLOR
         _uiState.update { currentState ->
@@ -329,7 +369,7 @@ class TicViewModel(
     }
 
     private fun changeTurn(){
-        val updatedTurn = if(uiState.value.currentMove == DefaultCellValues.X) DefaultCellValues.O else DefaultCellValues.X
+        val updatedTurn = if(uiState.value.currentMove == CustomCellValues.player1) CustomCellValues.player2 else CustomCellValues.player1
         _uiState.update { a ->
             a.copy(currentMove = updatedTurn)
         }
@@ -337,7 +377,7 @@ class TicViewModel(
 
     private fun changeFirstMove(){
         if(canChangeFirstMove){
-            val move = if(uiState.value.firstMove == DefaultCellValues.O) DefaultCellValues.X else DefaultCellValues.O
+            val move = if(uiState.value.firstMove == CustomCellValues.player1) CustomCellValues.player2 else CustomCellValues.player1
             _uiState.update { a ->
                 a.copy(
                     firstMove = move,
@@ -355,7 +395,7 @@ class TicViewModel(
         b: Int,
     ): Boolean {
         //in case of DRAW - searching for currentMove & EMPTY cells, otherwise - only for currentMove cells (currentMove || currentMove)
-        val emptyOrCurrentMoveCell = if(endOfCheck == DRAW) DefaultCellValues.EMPTY else uiState.value.currentMove
+        val emptyOrCurrentMoveCell = if(endOfCheck == DRAW) CustomCellValues.EMPTY else uiState.value.currentMove
 
         return ((uiState.value.gameArray[a][b].cellText == uiState.value.currentMove) ||
                 (uiState.value.gameArray[a][b].cellText == (emptyOrCurrentMoveCell)))
@@ -381,7 +421,7 @@ class TicViewModel(
 
         // Bot special check for player's possible win in two moves
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI + 1 < gameArray.size) &&
-            (uiState.value.gameArray[newI + 1][j].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[newI + 1][j].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -394,7 +434,7 @@ class TicViewModel(
 
         // Bot special check for player's possible win in two moves
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI > 0) &&
-            (uiState.value.gameArray[newI - 1][j].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[newI - 1][j].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -437,7 +477,7 @@ class TicViewModel(
         }
 
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newJ + 1 < gameArray.size) &&
-            (uiState.value.gameArray[i][newJ + 1].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[i][newJ + 1].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -448,7 +488,7 @@ class TicViewModel(
         }
 
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newJ > 0) &&
-            (uiState.value.gameArray[i][newJ - 1].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[i][newJ - 1].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -492,7 +532,7 @@ class TicViewModel(
         }
 
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI + 1 < gameArray.size) && (newJ + 1 < gameArray.size) &&
-            (uiState.value.gameArray[newI + 1][newJ + 1].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[newI + 1][newJ + 1].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -505,7 +545,7 @@ class TicViewModel(
         }
 
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI > 0) && (newJ > 0) &&
-            (uiState.value.gameArray[newI - 1][newJ - 1].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[newI - 1][newJ - 1].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -549,7 +589,7 @@ class TicViewModel(
         }
 
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI + 1 < gameArray.size) && (newJ > 0) &&
-            (uiState.value.gameArray[newI + 1][newJ - 1].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[newI + 1][newJ - 1].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -562,7 +602,7 @@ class TicViewModel(
         }
 
         if((endOfCheck == TWO_BEFORE_PLAYER_WIN) && (newI > 0) && (newJ + 1 < gameArray.size) &&
-            (uiState.value.gameArray[newI - 1][newJ + 1].cellText == DefaultCellValues.EMPTY)){
+            (uiState.value.gameArray[newI - 1][newJ + 1].cellText == CustomCellValues.EMPTY)){
             winInTwoMoves++
         }
 
@@ -612,7 +652,7 @@ class TicViewModel(
 
         for (i in gameArray.indices){  // for other player
             for (j in gameArray[i].indices){
-                if((gameArray[i][j].cellText == DefaultCellValues.EMPTY) && winIsImpossible){
+                if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && winIsImpossible){
                     checkField(DRAW, i, j)
                 }
             }
@@ -620,7 +660,7 @@ class TicViewModel(
         changeTurn()
         for (i in gameArray.indices){  // for this player
             for (j in gameArray[i].indices){
-                if((gameArray[i][j].cellText == DefaultCellValues.EMPTY) && winIsImpossible){
+                if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && winIsImpossible){
                     checkField(DRAW, i, j)
                 }
             }
@@ -639,5 +679,3 @@ class TicViewModel(
     }
 
 }
-
-
