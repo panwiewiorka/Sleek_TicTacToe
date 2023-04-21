@@ -26,7 +26,7 @@ val Colors.win: Color
 
 val Colors.lose: Color
     @Composable
-    get() = if (isLight) Color(0xFFFF0000) else Color(0xFFFF0000)
+    get() = if (isLight) Color(0xFFFF4848) else Color(0xFFED3333)
 
 val Colors.invisible1: Color
     @Composable

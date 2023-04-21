@@ -43,7 +43,7 @@ class TicViewModel(
     private var freeCellsLeft = 9 // TODO check if ALL THOSE VARs should be saved into DB
     private var winIsImpossible = true
     private var canChangeFirstMove = false
-    private var savedMove = CustomCellValues.EMPTY
+    private var savedMove = CustomCellValues.player1
 
     //--------INTERFACE
 
@@ -289,7 +289,6 @@ class TicViewModel(
 
     fun makeMove(i: Int, j: Int){
         val gameArray = uiState.value.gameArray
-        //gameArray[iTwoMovesBefore][jTwoMovesBefore].textColor = StandartCell
         iTwoMovesBefore = iOneMoveBefore
         jTwoMovesBefore = jOneMoveBefore
         gameArray[iOneMoveBefore][jOneMoveBefore].cellColor = CellColors.STANDART_COLOR
@@ -650,22 +649,25 @@ class TicViewModel(
         val gameArray = uiState.value.gameArray
         // checking whether any of the free remaining cells can possibly win
 
-        for (i in gameArray.indices){  // for other player
-            for (j in gameArray[i].indices){
-                if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && winIsImpossible){
+        if(freeCellsLeft > 1) {
+            for (i in gameArray.indices) {  // for other player
+                for (j in gameArray[i].indices) {
+                    if ((gameArray[i][j].cellText == CustomCellValues.EMPTY) && winIsImpossible) {
+                        checkField(DRAW, i, j)
+                    }
+                }
+            }
+        }
+        changeTurn()
+        for (i in gameArray.indices) {  // for this player
+            for (j in gameArray[i].indices) {
+                if ((gameArray[i][j].cellText == CustomCellValues.EMPTY) && winIsImpossible) {
                     checkField(DRAW, i, j)
                 }
             }
         }
         changeTurn()
-        for (i in gameArray.indices){  // for this player
-            for (j in gameArray[i].indices){
-                if((gameArray[i][j].cellText == CustomCellValues.EMPTY) && winIsImpossible){
-                    checkField(DRAW, i, j)
-                }
-            }
-        }
-        changeTurn()
+
         // if there are no such cells -> Draw
         if(winIsImpossible) {
             for(i in gameArray.indices) {

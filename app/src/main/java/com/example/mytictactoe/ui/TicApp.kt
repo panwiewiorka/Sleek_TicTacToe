@@ -2,6 +2,8 @@ package com.example.mytictactoe.ui
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,11 +31,15 @@ import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import com.example.mytictactoe.ui.theme.*
 import kotlinx.coroutines.coroutineScope
 
+val Int.nonScaledSp
+    @Composable
+    get() = (this / LocalDensity.current.fontScale).sp
 
 @Composable
 fun TicApp(
@@ -98,7 +104,8 @@ fun TicApp(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .align(Alignment.TopCenter),
+                    .align(Alignment.TopCenter)
+                    .height(46.dp),
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
 
@@ -106,6 +113,7 @@ fun TicApp(
                 CancelButton(
                     modifier = Modifier
                         .weight(1f)
+                        .fillMaxHeight()
                         .testTag("Cancel Button"),
                     cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
                     cancelMove = {
@@ -115,25 +123,18 @@ fun TicApp(
                     paddingStart = 10.dp,
                 )
 
-
-
-//                CustomCellButton(
-//                    currentMove = ticUiState.currentMove,
-//                    showCustomCellDialog = {ticViewModel.showCustomCellDialog(true)}
-//                )
-
-
-
-
                 //---------------------------icon  XO
                 CurrentMoveAndAiIcons(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
                     playingVsAI = ticUiState.playingVsAI,
                     menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
                     showCustomCellDialog = {ticViewModel.showCustomCellDialog(true)},
-                    paddingTop = 8.dp,
-                    paddingBottom = 10.dp,
+                    cancelBotWait = {ticViewModel.cancelBotWait()},
+                    //paddingTop = 8.dp,
+                    //paddingBottom = 10.dp,
                     botIconOffsetX = 30.dp,
                 )
 
@@ -142,6 +143,7 @@ fun TicApp(
                     ticViewModel = ticViewModel,
                     modifier = Modifier
                         .weight(1f)
+                        .fillMaxHeight()
                         .testTag("Menu Button"),
                     winRow = ticUiState.winRow,
                     menuButtonShouldBeShaken = ticUiState.menuButtonShouldBeShaken,
@@ -162,6 +164,7 @@ fun TicApp(
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
+                    .width(46.dp)
                     .align(Alignment.CenterStart),
                 verticalArrangement = Arrangement.SpaceAround
             ) {
@@ -171,7 +174,9 @@ fun TicApp(
                     ticViewModel = ticViewModel,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(bottom = 18.dp)
+                        .fillMaxWidth()
+                        .offset(0.dp, (-9).dp)
+                        //.padding(bottom = 18.dp)
                         .testTag("Menu Button"),
                     winRow = ticUiState.winRow,
                     menuButtonShouldBeShaken = ticUiState.menuButtonShouldBeShaken,
@@ -181,12 +186,15 @@ fun TicApp(
                 CurrentMoveAndAiIcons(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(bottom = 24.dp),
+                        .fillMaxWidth()
+                        .offset(0.dp, (-12).dp),
+                        //.padding(bottom = 24.dp),
                     playingVsAI = ticUiState.playingVsAI,
                     menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
                     showCustomCellDialog = {ticViewModel.showCustomCellDialog(true)},
-                    paddingStart = 15.dp,
+                    cancelBotWait = {ticViewModel.cancelBotWait()},
+                    //paddingStart = 15.dp,
                     botIconOffsetY = (-34).dp,
                 )
 
@@ -194,6 +202,7 @@ fun TicApp(
                 CancelButton(
                     modifier = Modifier
                         .weight(1f)
+                        .fillMaxWidth()
                         .testTag("Cancel Button"),
                     cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
                     cancelMove = {ticViewModel.cancelMove()},
@@ -207,7 +216,10 @@ fun TicApp(
     //----------------------------CUSTOM SYMBOL Dialog
     if(ticUiState.customCellDialogIsVisible){
         AlertDialog(
-            onDismissRequest = { ticViewModel.showCustomCellDialog(false) },
+            onDismissRequest = {
+                ticViewModel.showCustomCellDialog(false)
+                ticViewModel.makeBotMove() // if Bot's turn
+                },
             buttons = {
                 CustomCellDialog(
                     ticViewModel = ticViewModel,
@@ -219,7 +231,13 @@ fun TicApp(
             backgroundColor = Color.Transparent,
             modifier = Modifier
                 .padding(0.dp)
-        )
+                .size(100.dp)
+                .clickable {
+                    ticViewModel.showCustomCellDialog(false)
+                    ticViewModel.makeBotMove() // if Bot's turn
+                }
+                .wrapContentSize(align = Alignment.Center, unbounded = true),
+            )
     }
 }
 
@@ -511,7 +529,9 @@ fun CancelButton(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(bottom = paddingBoxBottom),
+            modifier = Modifier
+                .padding(bottom = paddingBoxBottom)
+                .wrapContentSize(Alignment.Center, unbounded = true),
         ) {
             val alpha = if (cancelMoveButtonEnabled) 1f else 0.33f
             Icon(
@@ -529,78 +549,24 @@ fun CancelButton(
 
 
 @Composable
-fun CustomCellDialog(
-    ticViewModel: TicViewModel,
-    currentMove: Char,
-    theme: AppTheme,
-    ){
-    var str by remember {
-        mutableStateOf("")
-    }
-    var symbol by remember {
-        mutableStateOf(TextFieldValue(str))
-    }
-    val focusRequester = remember { FocusRequester() }
-    Box(
-        contentAlignment = Alignment.Center,
-    ){
-        OutlinedTextField(
-            value = symbol,
-            onValueChange = {
-                symbol = it
-                ticViewModel.changeCellSymbol(it.text.toCharArray().first())
-                str = ""
-                ticViewModel.showCustomCellDialog(false)
-            },
-            singleLine = true,
-            label = null,
-            modifier = Modifier
-                .width(0.dp)
-                .alpha(0f)
-                .focusRequester(focusRequester),
-        )
-        LaunchedEffect(Unit) {
-            focusRequester.requestFocus()
-        }
-
-        val circleBG = if((theme == AppTheme.DARK) || ((theme == AppTheme.AUTO) && (isSystemInDarkTheme()))) Color.White else Color.Black
-        Canvas(
-            modifier = Modifier.size(100.dp),
-            onDraw = { drawCircle(color = circleBG) }
-        )
-        Text(text = currentMove.toString(), fontSize = 62.sp, color = MaterialTheme.colors.surface)
-        Button(
-            onClick = { ticViewModel.showCustomCellDialog(false) },
-            shape = CircleShape,
-            contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.alpha(0f),
-        ) {
-            Canvas(
-                modifier = Modifier.size(100.dp),
-                onDraw = { drawCircle(color = Color.Transparent) }
-            )
-        }
-    }
-}
-
-
-@Composable
 fun CurrentMoveAndAiIcons(
     modifier: Modifier,
     playingVsAI: Boolean,
     menuIsVisible: Boolean,
     currentMove: Char,
     showCustomCellDialog: (Boolean) -> Unit,
-    paddingTop: Dp = 0.dp,
-    paddingBottom: Dp = 0.dp,
-    paddingStart: Dp = 0.dp,
-    paddingEnd: Dp = 0.dp,
+    cancelBotWait: () -> Unit,
+    offsetX: Dp = 0.dp,
+    offsetY: Dp = 0.dp,
     botIconOffsetX: Dp = 0.dp,
     botIconOffsetY: Dp = 0.dp,
 ){
     Button(
         modifier = modifier,
-        onClick = {showCustomCellDialog(true)},
+        onClick = {
+            showCustomCellDialog(true)
+            cancelBotWait()
+                  },
         shape = RoundedCornerShape(60.dp),
         border = null,
         elevation = null,
@@ -611,27 +577,32 @@ fun CurrentMoveAndAiIcons(
         )
     ) {
         Box(
-            modifier = modifier,
+            modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
             contentAlignment = Alignment.Center,
         ) {
             val currentMoveIcon = if (currentMove == CustomCellValues.player1)
                 painterResource(R.drawable.close_48px)
             else painterResource(R.drawable.fiber_manual_record_48px)
+            
             val testStringCurrentMove = if (currentMove == CustomCellValues.player1)
                 "currentMove: X" else "currentMove: 0"
-            Icon(
-                currentMoveIcon,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(50.dp)
-                    .padding(
-                        top = paddingTop,
-                        bottom = paddingBottom,
-                        start = paddingStart,
-                        end = paddingEnd
-                    )
-                    .testTag(testStringCurrentMove)
-            )
+            if(currentMove == 'X' || currentMove == 'O'){
+                Icon(
+                    currentMoveIcon,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(30.dp)
+                        .offset(offsetX, offsetY)
+                        .testTag(testStringCurrentMove)
+                )
+            } else {
+                Text(
+                    text = currentMove.toString(),
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 28.nonScaledSp,
+                    modifier = Modifier.offset(0.dp, (-1).dp)
+                )
+            }
             if(playingVsAI){
                 val iconAlpha = if(currentMove == CustomCellValues.player2) 1f else 0f
                 val infiniteMove = rememberInfiniteTransition()
@@ -652,19 +623,105 @@ fun CurrentMoveAndAiIcons(
                     contentDescription = null,
                     modifier = Modifier
                         .alpha(iconAlpha)
-                        .size(46.dp)
-                        .padding(
-                            top = paddingTop,
-                            bottom = paddingBottom,
-                            start = paddingStart,
-                            end = paddingEnd
-                        )
+                        .size(30.dp)
+//                        .padding(
+//                            top = paddingTop,
+//                            bottom = paddingBottom,
+//                            start = paddingStart,
+//                            end = paddingEnd
+//                        )
                         .offset(
                             botIconOffsetX,
                             botIconOffsetY + ((moveIcon * moveAmplitude).dp - 1.dp)
                         )
                 )
             }
+        }
+    }
+}
+
+
+@Composable
+fun CustomCellDialog(
+    ticViewModel: TicViewModel,
+    currentMove: Char,
+    theme: AppTheme,
+){
+    val str by remember {
+        mutableStateOf("")
+    }
+    val symbol by remember {
+        mutableStateOf(TextFieldValue(str))
+    }
+    val focusRequester = remember { FocusRequester() }
+
+    var shakeOn by remember { mutableStateOf(false) }
+    val shakeDp by animateDpAsState(
+        targetValue = if (shakeOn) 15.dp else 0.dp,
+        animationSpec = if (shakeOn){
+            tween(durationMillis = 50, easing = FastOutLinearInEasing)
+        } else {
+            spring(dampingRatio = 0.15f, stiffness = 1200f)
+        },
+        finishedListener = {shakeOn = false}
+    )
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .offset(shakeDp, 0.dp)
+            //.wrapContentSize(align = Alignment.Center, unbounded = true),
+        ){
+        OutlinedTextField(
+            onValueChange = {
+                val itChar = it.text.toCharArray().first()
+                val otherPlayer = if(currentMove != CustomCellValues.player1) CustomCellValues.player1 else CustomCellValues.player2
+                if((CustomCellValues.forbiddenValues.contains(itChar)) || (itChar == otherPlayer) || (itChar.isSurrogate())){
+                    shakeOn = true
+                } else {
+                    ticViewModel.showCustomCellDialog(false)
+                    ticViewModel.changeCellSymbol(itChar)
+                    ticViewModel.cancelBotWait() // fixing occasional double-move
+                    ticViewModel.makeBotMove() // if Bot's turn
+                    //symbol = it
+                    //str = ""
+                }
+            },
+            value = symbol,
+            singleLine = true,
+            label = null,
+            modifier = Modifier
+                .width(0.dp)
+                //.alpha(0f)
+                .focusRequester(focusRequester),
+        )
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+
+        val circleBG = if((theme == AppTheme.DARK) || ((theme == AppTheme.AUTO) && (isSystemInDarkTheme()))) Color.White else Color.Black
+        Canvas(
+            modifier = Modifier.size(100.dp),
+            onDraw = { drawCircle(color = circleBG) }
+        )
+        Text(text = currentMove.toString(), fontSize = 62.nonScaledSp, color = MaterialTheme.colors.surface)
+        Button(
+            onClick = {
+                ticViewModel.showCustomCellDialog(false)
+                ticViewModel.makeBotMove() // if Bot's turn
+                      },
+            shape = RoundedCornerShape(0.dp),
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier
+                .size(160.dp)
+                .alpha(0f)
+                //.wrapContentSize(align = Alignment.Center, unbounded = true),
+        ) {
+//            Canvas(
+//                modifier = Modifier
+//                    .size(300.dp),
+//                    //.wrapContentSize(align = Alignment.Center, unbounded = true),
+//                onDraw = { drawCircle(color = Color.Blue) }
+//            )
         }
     }
 }
@@ -705,8 +762,11 @@ fun MenuButton(
             finishedListener = {ticViewModel.shakeMenuButton(false)}
         )
 
-        Box(contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(x = shake,y = 0.dp)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .offset(x = shake,y = 0.dp)
+                .wrapContentSize(Alignment.Center, unbounded = true),
         ){
             Icon(
                 painterResource(R.drawable.crop_square_48px),
@@ -795,7 +855,8 @@ fun GameField(
                 ticViewModel.setMenuSettings(LOAD)
                 ticViewModel.saveOrLoadCurrentMove(SAVE)
                 ticViewModel.changeFirstMoveOnMenuShowing()
-            }) {}
+            }
+        ) {}
     }
 }
 
@@ -897,6 +958,33 @@ fun AutoResizedText(
         )
     }
 }
+
+
+/*
+// sequencer PressInteraction
+@Composable
+fun VoiceButton(note: Int, kmmk: KmmkComponentContext){
+    val interactionSource = remember { MutableInteractionSource() }
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collect { interaction ->
+            when (interaction) {
+                is PressInteraction.Press -> { kmmk.noteOn(note) }
+                is PressInteraction.Release -> { kmmk.noteOff(note) }
+                is PressInteraction.Cancel -> { kmmk.noteOff(note) }
+            }
+        }
+    }
+    Button(interactionSource = interactionSource,
+        onClick = {},
+        modifier = Modifier
+            .size(80.dp)
+            .border(width = 1.dp, color = Color(0xFF000000))
+            .background(Color.Gray, shape = RoundedCornerShape(0.dp))
+    ) {
+
+    }
+}
+ */
 
 
 fun Modifier.disableSplitMotionEvents() =

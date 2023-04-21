@@ -14,8 +14,9 @@ data class Cell(
 
 object CustomCellValues{
     const val EMPTY: Char = ' '
-    var player1: Char = '1'
-    var player2: Char = '2'
+    var player1: Char = 'X'
+    var player2: Char = 'O'
+    val forbiddenValues = setOf(' ', ',', '.', '\'', '"', '-', '_', ':', ';', '`', '/', '\\', '|',)
 }
 
 enum class CellColors {
