@@ -1,11 +1,12 @@
 package com.example.mytictactoe.data
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [SettingsTable::class], version = 1, exportSchema = false)
+@Database(entities = [
+    SettingsTable::class,
+    //GameFieldTable::class
+                     ], version = 1, exportSchema = false)
 abstract class SettingsDatabase: RoomDatabase() {
     abstract val dao: SettingsDao
     //abstract fun dao(): SettingsDao

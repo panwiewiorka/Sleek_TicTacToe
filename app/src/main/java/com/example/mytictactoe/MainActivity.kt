@@ -18,6 +18,7 @@ import com.example.mytictactoe.data.SettingsDatabase
 import com.example.mytictactoe.ui.TicApp
 import com.example.mytictactoe.ui.TicViewModel
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
@@ -55,5 +56,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.saveSettingsToDatabase()
     }
 }

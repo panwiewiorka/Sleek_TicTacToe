@@ -39,7 +39,3 @@ val Colors.invisible2: Color
 val Colors.draw: Color
     @Composable
     get() = if (isLight) Color(0xFFA85562) else Color(0xFF440512)
-
-val Colors.menuBorder: Color
-    @Composable
-    get() = if (isLight) Color(0x00000000) else Color(0x00222222) // still using? Menu border

@@ -2,8 +2,6 @@ package com.example.mytictactoe.ui
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +14,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -34,6 +33,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import com.example.mytictactoe.CustomCellValues.lookAlikeValues
 import com.example.mytictactoe.ui.theme.*
 import kotlinx.coroutines.coroutineScope
 
@@ -52,6 +52,7 @@ fun TicApp(
         AlertDialog(
             onDismissRequest = {
                 ticViewModel.cancelWinRowChangesDuringTheGame()
+                ticViewModel.cancelWinOrLoseChangesDuringTheGame()
                 ticViewModel.setMenuSettings(SAVE)
                 ticViewModel.changeFirstMoveOnMenuShowing()
                 ticViewModel.saveOrLoadCurrentMove(LOAD)
@@ -72,12 +73,7 @@ fun TicApp(
             shape = RoundedCornerShape(30.dp),
             modifier = Modifier
                 .testTag("Menu Window")
-                .widthIn(220.dp, 300.dp)
-                .border(
-                    width = 3.dp,
-                    color = MaterialTheme.colors.menuBorder,
-                    shape = RoundedCornerShape(30.dp)
-                ),
+                .widthIn(220.dp, 300.dp),
         )
     }
 
@@ -146,7 +142,9 @@ fun TicApp(
                         .fillMaxHeight()
                         .testTag("Menu Button"),
                     winRow = ticUiState.winRow,
+                    winNotLose = ticUiState.winNotLose,
                     menuButtonShouldBeShaken = ticUiState.menuButtonShouldBeShaken,
+                    orientation = orientation,
                 )
             }
         } else {
@@ -179,8 +177,10 @@ fun TicApp(
                         //.padding(bottom = 18.dp)
                         .testTag("Menu Button"),
                     winRow = ticUiState.winRow,
+                    winNotLose = ticUiState.winNotLose,
                     menuButtonShouldBeShaken = ticUiState.menuButtonShouldBeShaken,
-                )
+                    orientation = orientation,
+                    )
 
                 //---------------------------icon  XO
                 CurrentMoveAndAiIcons(
@@ -227,17 +227,12 @@ fun TicApp(
                     theme = ticUiState.theme,
                 )
             },
-            shape = RoundedCornerShape(0.dp),
             backgroundColor = Color.Transparent,
+            shape = RectangleShape,
             modifier = Modifier
-                .padding(0.dp)
                 .size(100.dp)
-                .clickable {
-                    ticViewModel.showCustomCellDialog(false)
-                    ticViewModel.makeBotMove() // if Bot's turn
-                }
                 .wrapContentSize(align = Alignment.Center, unbounded = true),
-            )
+        )
     }
 }
 
@@ -580,15 +575,15 @@ fun CurrentMoveAndAiIcons(
             modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
             contentAlignment = Alignment.Center,
         ) {
-            val currentMoveIcon = if (currentMove == CustomCellValues.player1)
-                painterResource(R.drawable.close_48px)
-            else painterResource(R.drawable.fiber_manual_record_48px)
+//            val currentMoveIcon = if (currentMove == CustomCellValues.player1)
+//                painterResource(R.drawable.close_48px)
+//            else painterResource(R.drawable.fiber_manual_record_48px)
             
             val testStringCurrentMove = if (currentMove == CustomCellValues.player1)
                 "currentMove: X" else "currentMove: 0"
             if(currentMove == 'X' || currentMove == 'O'){
                 Icon(
-                    currentMoveIcon,
+                    painter = if(currentMove == 'X') painterResource(R.drawable.close_48px) else painterResource(R.drawable.fiber_manual_record_48px),
                     contentDescription = null,
                     modifier = Modifier
                         .size(30.dp)
@@ -668,8 +663,8 @@ fun CustomCellDialog(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
+            .padding(0.dp)
             .offset(shakeDp, 0.dp)
-            //.wrapContentSize(align = Alignment.Center, unbounded = true),
         ){
         OutlinedTextField(
             onValueChange = {
@@ -709,20 +704,13 @@ fun CustomCellDialog(
                 ticViewModel.showCustomCellDialog(false)
                 ticViewModel.makeBotMove() // if Bot's turn
                       },
-            shape = RoundedCornerShape(0.dp),
+            shape = RectangleShape,
             contentPadding = PaddingValues(0.dp),
             modifier = Modifier
-                .size(160.dp)
+                //.matchParentSize()
+                .size(130.dp)
                 .alpha(0f)
-                //.wrapContentSize(align = Alignment.Center, unbounded = true),
-        ) {
-//            Canvas(
-//                modifier = Modifier
-//                    .size(300.dp),
-//                    //.wrapContentSize(align = Alignment.Center, unbounded = true),
-//                onDraw = { drawCircle(color = Color.Blue) }
-//            )
-        }
+        ) {}
     }
 }
 
@@ -732,13 +720,16 @@ fun MenuButton(
     ticViewModel: TicViewModel,
     modifier: Modifier,
     winRow: Int,
+    winNotLose: Boolean,
     menuButtonShouldBeShaken: Boolean,
-){
+    orientation: Orientation,
+    ){
     Button(
         modifier = modifier,
         onClick = {
             ticViewModel.cancelBotWait()
             ticViewModel.saveWinRow()
+            ticViewModel.saveWinOrLose()
             ticViewModel.showMenu(true)
             ticViewModel.setMenuSettings(LOAD)
             ticViewModel.saveOrLoadCurrentMove(SAVE)
@@ -749,7 +740,7 @@ fun MenuButton(
         border = null,
         elevation = null,
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = Color(0x00000000),
+            backgroundColor = Color.Transparent,
         )
     ) {
         val shake by animateDpAsState(
@@ -765,7 +756,7 @@ fun MenuButton(
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
-                .offset(x = shake,y = 0.dp)
+                .offset(x = shake, y = 0.dp)
                 .wrapContentSize(Alignment.Center, unbounded = true),
         ){
             Icon(
@@ -781,6 +772,23 @@ fun MenuButton(
                         .testTag("winRow square")
                         .offset(0.dp, (-0.5).dp),
                     autoResizeHeightOrWidth = HEIGHT
+                )
+            }
+
+            val alpha by animateFloatAsState(
+                targetValue = if(!menuButtonShouldBeShaken) 0f else 1f,
+                animationSpec = if(!menuButtonShouldBeShaken)
+                    tween(durationMillis = 700, delayMillis = 700, easing = LinearOutSlowInEasing)
+                else tween(durationMillis = 0, delayMillis = 0, easing = LinearOutSlowInEasing)
+            )
+            if(orientation == PORTRAIT){
+                Text(
+                    text = if (winNotLose) "wins" else "loses",
+                    fontSize = 16.nonScaledSp,
+                    modifier = Modifier
+                        .offset(34.dp, 0.dp)
+                        .alpha(alpha)
+                        .width(40.dp)
                 )
             }
         }
@@ -851,6 +859,7 @@ fun GameField(
             .testTag("Game Over Screen")
             .clickable(enabled = botOrGameOverScreen.state.clickable) {
                 ticViewModel.saveWinRow()
+                ticViewModel.saveWinOrLose()
                 ticViewModel.showMenu(true)
                 ticViewModel.setMenuSettings(LOAD)
                 ticViewModel.saveOrLoadCurrentMove(SAVE)
@@ -937,6 +946,7 @@ fun AutoResizedText(
             },
             softWrap = false,
             style = resizedTextStyle,
+            fontWeight = if(lookAlikeValues.contains(text.first())) FontWeight.Bold else FontWeight.Normal,
             onTextLayout = { result ->
                 if (result.didOverflowHeight) {
                     if (style.fontSize.isUnspecified) {

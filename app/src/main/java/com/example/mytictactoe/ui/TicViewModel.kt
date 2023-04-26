@@ -22,28 +22,63 @@ class TicViewModel(
     private val _uiState = MutableStateFlow(TicUiState())
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            val settingsTable = SettingsTable(id = 1, theme = AppTheme.AUTO, playingVsAI = false)
-            dao.populateSettings(settingsTable)
-            _uiState.update { a ->
-                a.copy(
-                    theme = dao.loadSettings().theme,
-                    playingVsAI = dao.loadSettings().playingVsAI
-                )
-            }
-        }
-    }
-
     private var botWaits: Job = CoroutineScope(EmptyCoroutineContext).launch {  }
     private var iOneMoveBefore = 0
     private var jOneMoveBefore = 0
     private var iTwoMovesBefore = 0
     private var jTwoMovesBefore = 0
-    private var freeCellsLeft = 9 // TODO check if ALL THOSE VARs should be saved into DB
+    private var freeCellsLeft = 9
     private var winIsImpossible = true
     private var canChangeFirstMove = false
     private var savedMove = CustomCellValues.player1
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            val settingsTable = SettingsTable()
+            dao.populateSettings(settingsTable)
+            _uiState.update { a ->
+                a.copy(
+                    theme = dao.loadSettings().theme,
+                    winRow = dao.loadSettings().winRow,
+                    winNotLose = dao.loadSettings().winNotLose,
+                    playingVsAI = dao.loadSettings().playingVsAI,
+                    firstMove = dao.loadSettings().player1symbol,
+                    currentMove = dao.loadSettings().player1symbol,
+                    gameArray = Array(dao.loadSettings().arraySize) { i ->
+                        Array(dao.loadSettings().arraySize) { j ->
+                            Cell(
+                                isClickable = true,
+                                cellText = CustomCellValues.EMPTY,
+                                cellColor = CellColors.STANDART_COLOR,
+                            )
+                        }
+                    }
+                )
+            }
+            freeCellsLeft = dao.loadSettings().freeCellsLeft
+            savedMove = dao.loadSettings().player1symbol
+            CustomCellValues.player1 = dao.loadSettings().player1symbol
+            CustomCellValues.player2 = dao.loadSettings().player2symbol
+        }
+    }
+
+    fun saveSettingsToDatabase(){
+        runBlocking {
+            dao.saveSettings(
+                SettingsTable(
+                    id = 1,
+                    theme = uiState.value.theme,
+                    arraySize = uiState.value.gameArray.size,
+                    winRow = uiState.value.winRow,
+                    winNotLose = uiState.value.winNotLose,
+                    playingVsAI = uiState.value.playingVsAI,
+                    freeCellsLeft = freeCellsLeft,
+                    player1symbol = CustomCellValues.player1,
+                    player2symbol = CustomCellValues.player2,
+                )
+            )
+        }
+    }
 
     //--------INTERFACE
 
@@ -57,8 +92,6 @@ class TicViewModel(
         var ordinal = themeOrdinal + themeSign
         if(ordinal > 2) {ordinal = 0}
         if(ordinal < 0) {ordinal = 2}
-        val settingsTable = SettingsTable(id = 1, theme = fromOrdinal(ordinal), playingVsAI = uiState.value.playingVsAI)
-        viewModelScope.launch {dao.saveSettings(settingsTable)}
         _uiState.update { a ->
             a.copy(
                 theme = fromOrdinal(ordinal)
@@ -173,14 +206,6 @@ class TicViewModel(
         }
     }
 
-    fun changeWinOrLose(){
-        _uiState.update { a ->
-            a.copy(
-                winNotLose = !uiState.value.winNotLose
-            )
-        }
-    }
-
     fun setWinRow(slider: Float){
         // rounding to the nearest int, not necessarily to the lowest
         val winRow = (slider + 0.5).toInt()
@@ -213,9 +238,38 @@ class TicViewModel(
         }
     }
 
+    fun changeWinOrLose(){
+        _uiState.update { a ->
+            a.copy(
+                winNotLose = !uiState.value.winNotLose
+            )
+        }
+    }
+
+    fun saveWinOrLose(){
+        _uiState.update { a ->
+            a.copy(
+                savedWinNotLose = uiState.value.winNotLose
+            )
+        }
+    }
+
+    fun cancelWinOrLoseChangesDuringTheGame(){
+        if((uiState.value.savedWinNotLose != uiState.value.winNotLose) &&
+            (freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size))){
+            shakeMenuButton(true)
+            _uiState.update { a ->
+                a.copy(
+                    winNotLose = uiState.value.savedWinNotLose
+                )
+            }
+        }
+    }
+
     fun switchPlayingVsAiMode(){
-        val settingsTable = SettingsTable(id = 1, theme = uiState.value.theme, playingVsAI = !uiState.value.playingVsAI)
-        viewModelScope.launch {dao.saveSettings(settingsTable)}
+//        val settingsTable = initCurrentSettings()
+//        settingsTable.playingVsAI = !uiState.value.playingVsAI
+//        viewModelScope.launch {dao.saveSettings(settingsTable)}
         _uiState.update { a ->
             a.copy(
                 playingVsAI = !uiState.value.playingVsAI

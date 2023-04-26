@@ -1,8 +1,6 @@
 package com.example.mytictactoe.data
 
 import androidx.room.*
-import com.example.mytictactoe.AppTheme
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SettingsDao {
@@ -20,5 +18,15 @@ interface SettingsDao {
     fun loadSettings(): SettingsTable
     //fun loadSettings(darkTheme: Boolean): Flow<SettingsTable>
 
+
+
+//    @Insert(onConflict = OnConflictStrategy.IGNORE)
+//    suspend fun populateGameField(gameFieldTable: GameFieldTable)
+//
+//    @Upsert
+//    suspend fun saveGameField(gameFieldTable: GameFieldTable)
+//
+//    @Query("SELECT * from gameFieldTable")
+//    fun loadGameField(): GameFieldTable
 
 }

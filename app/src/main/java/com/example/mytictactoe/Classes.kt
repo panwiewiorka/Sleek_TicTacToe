@@ -17,6 +17,7 @@ object CustomCellValues{
     var player1: Char = 'X'
     var player2: Char = 'O'
     val forbiddenValues = setOf(' ', ',', '.', '\'', '"', '-', '_', ':', ';', '`', '/', '\\', '|',)
+    val lookAlikeValues = setOf('А', 'В', 'Е', 'З', 'К', 'М', 'Н', 'О', 'Р', 'С', 'Т', 'У', 'Х', 'а', 'е', 'о', 'р', 'с', 'у', 'х')
 }
 
 enum class CellColors {

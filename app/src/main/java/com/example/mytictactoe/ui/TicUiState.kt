@@ -15,9 +15,10 @@ data class TicUiState(
     val memorySettings: LoadOrSave = LOAD,
     val menuIsVisible: Boolean = true,
     val fieldSize: Dp = 0.dp,
-    val winNotLose: Boolean = true,
     val winRow: Int = 3,
     val savedWinRow: Int = 3,
+    val winNotLose: Boolean = true,
+    val savedWinNotLose: Boolean = true,
     val playingVsAI: Boolean = false,
     val menuButtonShouldBeShaken: Boolean = false,
     val firstMove: Char = CustomCellValues.player1,
@@ -26,9 +27,13 @@ data class TicUiState(
     val customCellDialogIsVisible: Boolean = false,
     val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
     val cellFontSize: TextUnit = 68.sp,
-    val gameArray: Array<Array<Cell>> = Array(3) { i -> Array(3) { j -> Cell(
-        isClickable = true,
-        cellText = CustomCellValues.EMPTY,
-        cellColor = CellColors.STANDART_COLOR,
-    ) } }
+    val gameArray: Array<Array<Cell>> = Array(3) { i ->
+        Array(3) { j ->
+            Cell(
+                isClickable = true,
+                cellText = CustomCellValues.EMPTY,
+                cellColor = CellColors.STANDART_COLOR,
+            )
+        }
+    }
 )
