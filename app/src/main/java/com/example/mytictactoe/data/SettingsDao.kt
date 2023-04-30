@@ -11,22 +11,18 @@ interface SettingsDao {
     @Upsert
     suspend fun saveSettings(settingsTable: SettingsTable)
 
-//    @Query("SELECT * from settingsTable WHERE id = :id")
-//    fun loadSettings(id: Int): Flow<SettingsTable>
-
     @Query("SELECT * from settingsTable WHERE id = 1")
     fun loadSettings(): SettingsTable
-    //fun loadSettings(darkTheme: Boolean): Flow<SettingsTable>
 
+    //---------
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun populateGameField(gameFieldTable: GameFieldTable)
 
-//    @Insert(onConflict = OnConflictStrategy.IGNORE)
-//    suspend fun populateGameField(gameFieldTable: GameFieldTable)
-//
-//    @Upsert
-//    suspend fun saveGameField(gameFieldTable: GameFieldTable)
-//
-//    @Query("SELECT * from gameFieldTable")
-//    fun loadGameField(): GameFieldTable
+    @Upsert
+    suspend fun saveGameField(gameFieldTable: GameFieldTable)
+
+    @Query("SELECT * from gameFieldTable WHERE id = :id")
+    fun loadGameField(id: Int): GameFieldTable
 
 }

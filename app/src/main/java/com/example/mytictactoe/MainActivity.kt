@@ -3,7 +3,6 @@
 package com.example.mytictactoe
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -18,7 +17,6 @@ import com.example.mytictactoe.data.SettingsDatabase
 import com.example.mytictactoe.ui.TicApp
 import com.example.mytictactoe.ui.TicViewModel
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
-import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
 
@@ -58,8 +56,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.makeBotMove()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.cancelBotWait()
+    }
+
     override fun onStop() {
         super.onStop()
+        viewModel.saveGameFieldToDatabase()
         viewModel.saveSettingsToDatabase()
     }
 }

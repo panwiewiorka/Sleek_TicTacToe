@@ -1,7 +1,7 @@
 package com.example.mytictactoe.ui
 
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mytictactoe.*
@@ -9,6 +9,7 @@ import com.example.mytictactoe.AppTheme.Companion.fromOrdinal
 import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.BotOrGameOverScreen.*
 import com.example.mytictactoe.EndOfCheck.*
+import com.example.mytictactoe.data.GameFieldTable
 import com.example.mytictactoe.data.SettingsDao
 import com.example.mytictactoe.data.SettingsTable
 import kotlinx.coroutines.*
@@ -23,27 +24,42 @@ class TicViewModel(
     val uiState: StateFlow<TicUiState> = _uiState.asStateFlow()
 
     private var botWaits: Job = CoroutineScope(EmptyCoroutineContext).launch {  }
-    private var iOneMoveBefore = 0
-    private var jOneMoveBefore = 0
+    var iOneMoveBefore = 0
+    var jOneMoveBefore = 0
     private var iTwoMovesBefore = 0
     private var jTwoMovesBefore = 0
-    private var freeCellsLeft = 9
+    var freeCellsLeft = 9
     private var winIsImpossible = true
     private var canChangeFirstMove = false
     private var savedMove = CustomCellValues.player1
+    private var savedPlayingVsAi = false
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
             val settingsTable = SettingsTable()
             dao.populateSettings(settingsTable)
+            val gameFieldTable = GameFieldTable()
+            repeat(9) { i: Int ->
+                gameFieldTable.id = i + 1
+                dao.populateGameField(gameFieldTable)
+            }
+
             _uiState.update { a ->
                 a.copy(
                     theme = dao.loadSettings().theme,
+                    memorySettings = dao.loadSettings().memorySettings,
+                    menuIsVisible = dao.loadSettings().menuIsVisible,
+                    fieldSize = dao.loadSettings().fieldSize.dp,
                     winRow = dao.loadSettings().winRow,
+                    savedWinRow = dao.loadSettings().savedWinRow,
                     winNotLose = dao.loadSettings().winNotLose,
+                    savedWinNotLose = dao.loadSettings().savedWinNotLose,
                     playingVsAI = dao.loadSettings().playingVsAI,
-                    firstMove = dao.loadSettings().player1symbol,
-                    currentMove = dao.loadSettings().player1symbol,
+                    firstMove = dao.loadSettings().firstMove,
+                    currentMove = dao.loadSettings().currentMove,
+                    cancelMoveButtonEnabled = dao.loadSettings().cancelMoveButtonEnabled,
+                    botOrGameOverScreen = dao.loadSettings().botOrGameOverScreen,
+                    cellFontSize = dao.loadSettings().cellFontSize,
                     gameArray = Array(dao.loadSettings().arraySize) { i ->
                         Array(dao.loadSettings().arraySize) { j ->
                             Cell(
@@ -55,10 +71,26 @@ class TicViewModel(
                     }
                 )
             }
+            iOneMoveBefore = dao.loadSettings().iOneMoveBefore
+            jOneMoveBefore = dao.loadSettings().jOneMoveBefore
+            iTwoMovesBefore = dao.loadSettings().iTwoMovesBefore
+            jTwoMovesBefore = dao.loadSettings().jTwoMovesBefore
             freeCellsLeft = dao.loadSettings().freeCellsLeft
-            savedMove = dao.loadSettings().player1symbol
+            winIsImpossible = dao.loadSettings().winIsImpossible
+            canChangeFirstMove = dao.loadSettings().canChangeFirstMove
+            savedMove = dao.loadSettings().savedMove
+            savedPlayingVsAi = dao.loadSettings().savedPlayingVsAi
             CustomCellValues.player1 = dao.loadSettings().player1symbol
             CustomCellValues.player2 = dao.loadSettings().player2symbol
+
+            val gameArray = uiState.value.gameArray
+            for(i in gameArray.indices) {
+                for(j in gameArray.indices) {
+                    gameArray[i][j].cellText = dao.loadGameField((i * gameArray.size) + j + 1).cellText
+                    gameArray[i][j].isClickable = dao.loadGameField((i * gameArray.size) + j + 1).isClickable
+                    gameArray[i][j].cellColor = dao.loadGameField((i * gameArray.size) + j + 1).cellColor
+                }
+            }
         }
     }
 
@@ -68,16 +100,54 @@ class TicViewModel(
                 SettingsTable(
                     id = 1,
                     theme = uiState.value.theme,
+                    memorySettings = uiState.value.memorySettings,
+                    menuIsVisible = uiState.value.menuIsVisible,
+                    fieldSize = uiState.value.fieldSize.value.toInt(),
                     arraySize = uiState.value.gameArray.size,
                     winRow = uiState.value.winRow,
+                    savedWinRow = uiState.value.savedWinRow,
                     winNotLose = uiState.value.winNotLose,
+                    savedWinNotLose = uiState.value.savedWinNotLose,
                     playingVsAI = uiState.value.playingVsAI,
+                    firstMove = uiState.value.firstMove,
+                    currentMove = uiState.value.currentMove,
+                    cancelMoveButtonEnabled = uiState.value.cancelMoveButtonEnabled,
+                    botOrGameOverScreen = uiState.value.botOrGameOverScreen,
+                    cellFontSize = uiState.value.cellFontSize,
+                    iOneMoveBefore = iOneMoveBefore,
+                    jOneMoveBefore = jOneMoveBefore,
+                    iTwoMovesBefore = iTwoMovesBefore,
+                    jTwoMovesBefore = jTwoMovesBefore,
                     freeCellsLeft = freeCellsLeft,
+                    winIsImpossible = winIsImpossible,
+                    canChangeFirstMove = canChangeFirstMove,
+                    savedMove = savedMove,
+                    savedPlayingVsAi = savedPlayingVsAi,
                     player1symbol = CustomCellValues.player1,
                     player2symbol = CustomCellValues.player2,
                 )
             )
         }
+    }
+
+    fun saveGameFieldToDatabase(){
+        runBlocking {
+            for (i in uiState.value.gameArray.flatten().mapIndexed{index, value -> index to value}.toMap()){
+                dao.saveGameField(
+                    GameFieldTable(
+                        id = i.key + 1,
+                        cellText = i.value.cellText,
+                        isClickable = i.value.isClickable,
+                        cellColor = i.value.cellColor)
+                )
+            }
+        }
+    }
+
+    // TalkBack accessibility
+    fun convertIndexToLetter(i: Int): Char{
+        val a = 'A'
+        return a + uiState.value.gameArray.size - i - 1
     }
 
     //--------INTERFACE
@@ -138,6 +208,14 @@ class TicViewModel(
         }
     }
 
+    fun showWinOrLoseIndication(show: Boolean){
+        _uiState.update { a ->
+            a.copy(
+                winOrLoseShouldBeShown = show
+            )
+        }
+    }
+
     fun showCustomCellDialog(showDialog: Boolean){
         _uiState.update { a ->
             a.copy(
@@ -180,11 +258,10 @@ class TicViewModel(
 
     private fun setCellFontSize(gameFieldSize: Int) {
         // changing cellFontSize depending on gameFieldSize
-        // before unnecessary recomposition possible by AutoResizedText() composable
-        // TODO: remember resized cell size and use it for all cells?
+        // TODO: exponential resizing? Test on bigger GameFields
         _uiState.update { a ->
             a.copy(
-                cellFontSize = (62 - (6 * (gameFieldSize - 3))).sp
+                cellFontSize = (62 - (6 * (gameFieldSize - 3)))
             )
         }
     }
@@ -258,6 +335,7 @@ class TicViewModel(
         if((uiState.value.savedWinNotLose != uiState.value.winNotLose) &&
             (freeCellsLeft != (uiState.value.gameArray.size * uiState.value.gameArray.size))){
             shakeMenuButton(true)
+            showWinOrLoseIndication(true)
             _uiState.update { a ->
                 a.copy(
                     winNotLose = uiState.value.savedWinNotLose
@@ -267,14 +345,15 @@ class TicViewModel(
     }
 
     fun switchPlayingVsAiMode(){
-//        val settingsTable = initCurrentSettings()
-//        settingsTable.playingVsAI = !uiState.value.playingVsAI
-//        viewModelScope.launch {dao.saveSettings(settingsTable)}
         _uiState.update { a ->
             a.copy(
                 playingVsAI = !uiState.value.playingVsAI
             )
         }
+    }
+
+    fun savePlayingVsAi(){
+        savedPlayingVsAi = uiState.value.playingVsAI
     }
 
     private fun setBotOrGameOverScreen(state: BotOrGameOverScreen){
@@ -329,7 +408,10 @@ class TicViewModel(
                 gameArray = gameArray,
             )
         }
-        changeFirstMove()
+        if(
+            uiState.value.winNotLose == uiState.value.savedWinNotLose
+            && uiState.value.playingVsAI == savedPlayingVsAi
+        ) changeFirstMove()
         allowChangingFirstMove(false)
         freeCellsLeft = size * size
         Bot.botCannotWin = true
@@ -370,12 +452,12 @@ class TicViewModel(
     fun makeBotMove(){
         with(Bot) {
             if(uiState.value.playingVsAI && (uiState.value.currentMove == CustomCellValues.player2) &&
-                ((uiState.value.botOrGameOverScreen != GAMEOVER))) {
+                (uiState.value.botOrGameOverScreen == HIDDEN)) {
                 setBotOrGameOverScreen(BOT)
+                setMoveCoordinates(uiState.value.winRow, uiState.value.gameArray, ::changeTurn, ::checkField)
                 botWaits = CoroutineScope(EmptyCoroutineContext).launch(Dispatchers.Default) {
                     val waitTime = (500L..2000L).random()
                     delay(waitTime)
-                    setMoveCoordinates(uiState.value.winRow, uiState.value.gameArray, ::changeTurn, ::checkField)
                     makeMove(botI, botJ)
                     _uiState.update { currentState ->
                         currentState.copy(

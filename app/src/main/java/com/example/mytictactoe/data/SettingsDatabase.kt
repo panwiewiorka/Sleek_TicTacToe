@@ -5,7 +5,7 @@ import androidx.room.RoomDatabase
 
 @Database(entities = [
     SettingsTable::class,
-    //GameFieldTable::class
+    GameFieldTable::class
                      ], version = 1, exportSchema = false)
 abstract class SettingsDatabase: RoomDatabase() {
     abstract val dao: SettingsDao

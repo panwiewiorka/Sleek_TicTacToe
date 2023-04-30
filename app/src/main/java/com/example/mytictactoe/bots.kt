@@ -24,7 +24,6 @@ object Bot {
             botCannotWin = false
         } else {
             gameArray[botI][botJ].cellColor = CellColors.INVISIBLE_COLOR1
-            //gameArray[botI][botJ].cellText = CellValues.V
         }
     }
 
@@ -35,7 +34,6 @@ object Bot {
             playerCannotWin = false
         } else {
             gameArray[botI][botJ].cellColor = CellColors.INVISIBLE_COLOR2
-            //gameArray[botI][botJ].cellText = CellValues.V
         }
     }
 

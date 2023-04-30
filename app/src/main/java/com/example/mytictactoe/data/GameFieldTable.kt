@@ -8,8 +8,8 @@ import com.example.mytictactoe.CustomCellValues
 @Entity(tableName = "gameFieldTable")
 data class GameFieldTable(
     @PrimaryKey(autoGenerate = true)
-    val id: Int = 1,
-    var cellText: Char = CustomCellValues.EMPTY,
-    var isClickable: Boolean = true,
-    var cellColor: CellColors = CellColors.STANDART_COLOR,
-    )
+    var id: Int = 1,
+    val cellText: Char = CustomCellValues.EMPTY,
+    val isClickable: Boolean = true,
+    val cellColor: CellColors = CellColors.STANDART_COLOR,
+)
