@@ -16,6 +16,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -318,16 +319,15 @@ fun MainMenu(
                 fontSize = 30.nonScaledSp,
                 color = MaterialTheme.colors.invisible1,
                 modifier = Modifier
-                    //.alpha(0f)
                     .offset(0.dp, (-40).dp)
                     .semantics {
                         contentDescription = "Close menu button."
-                        onClick( label = "return to the game. ", action = null)
+                        onClick(label = "return to the game. ", action = null)
                     }
                     .clickable(
                         interactionSource = interactionSource,
                         indication = null
-                    ){
+                    ) {
                         ticViewModel.cancelWinRowChangesDuringTheGame()
                         ticViewModel.cancelWinOrLoseChangesDuringTheGame()
                         ticViewModel.setMenuSettings(SAVE)
@@ -352,8 +352,8 @@ fun MainMenu(
             onValueChange = {
                 sizeSliderPosition = it
                 ticViewModel.setFieldSize(it) },
-            valueRange = 3f..8f,
-            steps = 4,
+            valueRange = 3f..windowInfo().sliderUpperLimit,
+            steps = windowInfo().sliderUpperLimit.toInt() - 4,
             onValueChangeFinished = {
                 if(winRowSliderPosition > sizeSliderPosition){
                     winRowSliderPosition = sizeSliderPosition
@@ -378,7 +378,7 @@ fun MainMenu(
         )
         //-------------------- WIN ROW text
         Box(
-            modifier = Modifier.heightIn(10.dp, 40.dp)
+            modifier = Modifier.heightIn(10.dp, 40.dp)   // TODO delete Box() since we don't use AutoResizeText anymore?
         ){
             Row(verticalAlignment = Alignment.CenterVertically){
                 Text(
@@ -436,15 +436,18 @@ fun MainMenu(
             // background grey slider
             Slider(
                 enabled = false,
-                value = winRowSliderPosition,
+                value = 0f,
                 onValueChange = {},
-                valueRange = 3f..8f,
-                steps = 4,
+                //valueRange = 3f..8f,
+                //steps = 4,
                 modifier = Modifier
                     .clearAndSetSemantics { }
                     .width(220.dp),
                 colors = SliderDefaults.colors(
-                    disabledInactiveTickColor = MaterialTheme.colors.onSurface.copy(alpha = 0f)
+                    disabledInactiveTickColor = Color.Transparent,
+                    disabledThumbColor = if(winRowUpperLimit == 3f) {
+                        MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled).compositeOver(MaterialTheme.colors.surface)
+                    } else Color.Transparent
                 )
             )
             // real winRow slider
