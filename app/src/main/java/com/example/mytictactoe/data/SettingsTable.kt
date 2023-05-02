@@ -22,7 +22,6 @@ data class SettingsTable(
     val currentMove: Char = CustomCellValues.player1,
     val cancelMoveButtonEnabled: Boolean = false,
     val botOrGameOverScreen: BotOrGameOverScreen = BotOrGameOverScreen.HIDDEN,
-    val cellFontSize: Int = 68,
     val iOneMoveBefore: Int = 0,
     val jOneMoveBefore: Int = 0,
     val iTwoMovesBefore: Int = 0,
