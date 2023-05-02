@@ -25,7 +25,6 @@ data class TicUiState(
     val cancelMoveButtonEnabled: Boolean = false,
     val customCellDialogIsVisible: Boolean = false,
     val botOrGameOverScreen: BotOrGameOverScreen = HIDDEN,
-    val cellFontSize: Int = 68,
     val gameArray: Array<Array<Cell>> = Array(3) { i ->
         Array(3) { j ->
             Cell(

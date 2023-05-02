@@ -99,7 +99,6 @@ fun TicApp(
                 playingVsAI = ticUiState.playingVsAI,
                 vertPadding = 50.dp,
                 horPadding = 0.dp,
-                cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
                 botOrGameOverScreen = ticUiState.botOrGameOverScreen,
             )
@@ -176,7 +175,6 @@ fun TicApp(
                 playingVsAI = ticUiState.playingVsAI,
                 vertPadding = 0.dp,
                 horPadding = 70.dp,
-                cellFontSize = ticUiState.cellFontSize,
                 gameArray = ticUiState.gameArray,
                 botOrGameOverScreen = ticUiState.botOrGameOverScreen,
                 )
@@ -476,7 +474,7 @@ fun MainMenu(
                         ticViewModel.setWinRow(winRowSliderPosition)
                     },
                     modifier = Modifier
-                        .width((40 * (winRowSteps + 1) + 20).dp)
+                        .width(((200 / (windowInfo().sliderUpperLimit - 3)) * (winRowSteps + 1) + 20).dp)
                         .semantics {
                             contentDescription =
                                 "${(winRowSliderPosition + 0.5).toInt()} in a row ends the game"
@@ -940,7 +938,6 @@ fun GameField(
     ticViewModel: TicViewModel = viewModel(),
     currentMove: Char,
     playingVsAI: Boolean,
-    cellFontSize: Int,
     gameArray: Array<Array<Cell>>,
     botOrGameOverScreen: BotOrGameOverScreen,
 ){
@@ -990,7 +987,7 @@ fun GameField(
                             Text(
                                 text = gameArray[i][j].cellText.toString(),
                                 style = MaterialTheme.typography.h3,
-                                fontSize = cellFontSize.nonScaledSp,
+                                fontSize = ((fieldSize / (gameArray.size + 1)).value * 0.7).toInt().nonScaledSp,
                                 color = gameArray[i][j].cellColor.color,
                                 modifier = Modifier
                                     .testTag("Text $i $j")

@@ -59,7 +59,6 @@ class TicViewModel(
                     currentMove = dao.loadSettings().currentMove,
                     cancelMoveButtonEnabled = dao.loadSettings().cancelMoveButtonEnabled,
                     botOrGameOverScreen = dao.loadSettings().botOrGameOverScreen,
-                    cellFontSize = dao.loadSettings().cellFontSize,
                     gameArray = Array(dao.loadSettings().arraySize) { i ->
                         Array(dao.loadSettings().arraySize) { j ->
                             Cell(
@@ -113,7 +112,6 @@ class TicViewModel(
                     currentMove = uiState.value.currentMove,
                     cancelMoveButtonEnabled = uiState.value.cancelMoveButtonEnabled,
                     botOrGameOverScreen = uiState.value.botOrGameOverScreen,
-                    cellFontSize = uiState.value.cellFontSize,
                     iOneMoveBefore = iOneMoveBefore,
                     jOneMoveBefore = jOneMoveBefore,
                     iTwoMovesBefore = iTwoMovesBefore,
@@ -256,16 +254,6 @@ class TicViewModel(
         }
     }
 
-    private fun setCellFontSize(gameFieldSize: Int) {
-        // changing cellFontSize depending on gameFieldSize
-        // TODO: exponential resizing? Test on bigger GameFields
-        _uiState.update { a ->
-            a.copy(
-                cellFontSize = (62 - (6 * (gameFieldSize - 3)))
-            )
-        }
-    }
-
     //---------SETTINGS
 
     fun setMenuSettings(loadOrSave: LoadOrSave){
@@ -395,7 +383,6 @@ class TicViewModel(
     //----------GAMEPlAY
 
     fun resetGame(size: Int){
-        setCellFontSize(size)
         val gameArray = Array(size) { Array(size) { Cell(
             isClickable = true,
             cellText = CustomCellValues.EMPTY,
