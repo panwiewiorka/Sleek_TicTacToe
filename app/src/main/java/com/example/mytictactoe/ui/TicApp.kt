@@ -143,8 +143,6 @@ fun TicApp(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
-                    winRow = ticUiState.winRow,
-                    winNotLose = ticUiState.winNotLose,
                     playingVsAI = ticUiState.playingVsAI,
                     menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
@@ -218,8 +216,6 @@ fun TicApp(
                         .weight(1f)
                         .fillMaxWidth()
                         .offset(0.dp, (-12).dp),
-                    winRow = ticUiState.winRow,
-                    winNotLose = ticUiState.winNotLose,
                     playingVsAI = ticUiState.playingVsAI,
                     menuIsVisible = ticUiState.menuIsVisible,
                     currentMove = ticUiState.currentMove,
@@ -671,8 +667,6 @@ fun CancelButton(
 @Composable
 fun CurrentMoveAndAiIcons(
     modifier: Modifier,
-    winRow: Int,
-    winNotLose: Boolean,
     playingVsAI: Boolean,
     menuIsVisible: Boolean,
     currentMove: Char,
@@ -684,7 +678,7 @@ fun CurrentMoveAndAiIcons(
     botIconOffsetY: Dp = 0.dp,
 ){
     Button(
-        modifier = modifier,
+        modifier = modifier.clearAndSetSemantics {},
         onClick = {
             showCustomCellDialog(true)
             cancelBotWait()
@@ -700,13 +694,15 @@ fun CurrentMoveAndAiIcons(
     ) {
         Box(
             modifier = Modifier
-                .wrapContentSize(Alignment.Center, unbounded = true)
-                .clearAndSetSemantics {
+                    /*
+                    .clearAndSetSemantics {
                     contentDescription =
                         "Current move is ${if (currentMove == player1) "X" else "O"}. " +
                                 "$winRow in a row ${if (winNotLose) "wins" else "loses"}. " +
                                 "Pressing this button opens menu for changing X and O symbols to some others. Affects only visual appearance."
-                },
+                }
+                     */
+                .wrapContentSize(Alignment.Center, unbounded = true),
             contentAlignment = Alignment.Center,
         ) {
             val testStringCurrentMove = if (currentMove == player1)
@@ -984,10 +980,12 @@ fun GameField(
                                 }
                                 .testTag("Cell $i $j")
                         ) {
+                            val text = gameArray[i][j].cellText.toString()
                             Text(
-                                text = gameArray[i][j].cellText.toString(),
+                                text = text,
                                 style = MaterialTheme.typography.h3,
                                 fontSize = ((fieldSize / (gameArray.size + 1)).value * 0.7).toInt().nonScaledSp,
+                                fontWeight = if(lookAlikeValues.contains(text.first())) FontWeight.Bold else FontWeight.Normal,
                                 color = gameArray[i][j].cellColor.color,
                                 modifier = Modifier
                                     .testTag("Text $i $j")

@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.dp
 //val windowInfo = rememberWindowInfo()
 //if(windowInfo.screenWidthInfo is WindowInfo.WindowType.Compact) {} else {}
 
+// most of this code is unused and is here as a useful template for future apps =)
 
 @Composable
 fun windowInfo(): WindowInfo {
