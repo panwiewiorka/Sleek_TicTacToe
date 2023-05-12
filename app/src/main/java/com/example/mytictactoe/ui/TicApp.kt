@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -30,7 +31,9 @@ import com.example.mytictactoe.LoadOrSave.*
 import com.example.mytictactoe.Orientation.*
 import com.example.mytictactoe.R
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -51,40 +54,7 @@ fun TicApp(
 ) {
     val ticUiState by ticViewModel.uiState.collectAsState()
 
-    //-------------------------------popup MENU SCREEN
-    if (ticUiState.menuIsVisible){
-        AlertDialog(
-            onDismissRequest = {
-                ticViewModel.cancelWinRowChangesDuringTheGame()
-                ticViewModel.cancelWinOrLoseChangesDuringTheGame()
-                ticViewModel.setMenuSettings(SAVE)
-                ticViewModel.changeFirstMoveOnMenuShowing()
-                ticViewModel.saveOrLoadCurrentMove(LOAD)
-                ticViewModel.showMenu(false)
-                ticViewModel.makeBotMove() // if Bot's turn
-                               },
-            buttons = {
-                MainMenu (
-                    ticViewModel = ticViewModel,
-                    theme = ticUiState.theme,
-                    size = ticUiState.gameArray.size,
-                    winNotLose = ticUiState.winNotLose,
-                    winRow = ticUiState.winRow,
-                    loadMemorySettings = ticUiState.memorySettings.loadOrSave,
-                    playingVsAI = ticUiState.playingVsAI,
-                    firstMove = ticUiState.firstMove,
-                )
-            },
-            shape = RoundedCornerShape(30.dp),
-            modifier = Modifier
-                .testTag("Menu Window")
-                //.wrapContentSize(Alignment.Center, true)
-                .widthIn(220.dp, 300.dp),
-        )
-    }
-
     //-------------------------------------MAIN SCREEN
-
     BoxWithConstraints(
         contentAlignment = Alignment.Center,
     ) {
@@ -264,10 +234,173 @@ fun TicApp(
                 .wrapContentSize(align = Alignment.Center, unbounded = true),
         )
     }
+
+    //-------------------------------------MENU WINDOW
+    MenuWindow(
+        ticViewModel = ticViewModel,
+        orientation = ticUiState.orientation,
+        theme = ticUiState.theme,
+        size = ticUiState.gameArray.size,
+        winNotLose = ticUiState.winNotLose,
+        winRow = ticUiState.winRow,
+        menuIsVisible = ticUiState.menuIsVisible,
+        loadMemorySettings = ticUiState.memorySettings.loadOrSave,
+        playingVsAI = ticUiState.playingVsAI,
+        firstMove = ticUiState.firstMove,
+    )
 }
 
 
 //****************************************************************************
+
+
+@Composable
+fun MenuWindow(
+    ticViewModel: TicViewModel = viewModel(),
+    orientation: Orientation,
+    theme: AppTheme,
+    size: Int,
+    winNotLose: Boolean,
+    winRow: Int,
+    menuIsVisible: Boolean,
+    loadMemorySettings: Boolean,
+    playingVsAI: Boolean,
+    firstMove: Char,
+){
+    var menuVisibility by remember { mutableStateOf(false) }
+    if(menuIsVisible) {menuVisibility = true}
+    val lift by animateDpAsState(
+        targetValue = if(menuIsVisible) 0.dp else 10.dp,
+        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+    )
+    val menuAlpha by animateFloatAsState(
+        targetValue = if(menuIsVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
+        finishedListener = {menuVisibility = false}
+    )
+
+    if(menuVisibility){
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(menuAlpha)
+        ){
+            val interactionSource = MutableInteractionSource()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = Color(0x77000000))
+                    .semantics {
+                        contentDescription = "Close menu button."
+                        onClick(label = "return to the game. ", action = null)
+                    }
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null
+                    ) {
+                        ticViewModel.cancelWinRowChangesDuringTheGame()
+                        ticViewModel.cancelWinOrLoseChangesDuringTheGame()
+                        ticViewModel.setMenuSettings(SAVE)
+                        ticViewModel.changeFirstMoveOnMenuShowing()
+                        ticViewModel.saveOrLoadCurrentMove(LOAD)
+                        ticViewModel.showMenu(false)
+                        ticViewModel.makeBotMove() // if Bot's turn
+                    }
+            )
+
+            if(orientation == PORTRAIT){
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(0.dp, lift),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    PolicyText(
+                        modifier = Modifier
+                            .rotate(0f)
+                            .alpha(0f),
+                        clickable = false
+                    )
+                    MainMenu(
+                        ticViewModel = ticViewModel,
+                        theme = theme,
+                        size = size,
+                        winNotLose = winNotLose,
+                        winRow = winRow,
+                        loadMemorySettings = loadMemorySettings,
+                        playingVsAI = playingVsAI,
+                        firstMove = firstMove,
+                    )
+
+                    PolicyText(
+                        modifier = Modifier
+                            .rotate(0f)
+                            .alpha(0.2f),
+                        clickable = true
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(0.dp, lift),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    PolicyText(
+                        modifier = Modifier
+                            .vertical()
+                            .rotate(270f)
+                            .alpha(0f),
+                        clickable = false
+                    )
+
+                    MainMenu(
+                        ticViewModel = ticViewModel,
+                        theme = theme,
+                        size = size,
+                        winNotLose = winNotLose,
+                        winRow = winRow,
+                        loadMemorySettings = loadMemorySettings,
+                        playingVsAI = playingVsAI,
+                        firstMove = firstMove,
+                    )
+
+                    PolicyText(
+                        modifier = Modifier
+                            .vertical()
+                            .rotate(270f)
+                            .alpha(0.2f),
+                        clickable = true
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun PolicyText(
+    modifier: Modifier = Modifier,
+    clickable: Boolean,
+){
+    val uriHandler = LocalUriHandler.current
+    Text(
+        text = "v 1.0  /  Privacy policy",
+        fontSize = 14.nonScaledSp,
+        color = MaterialTheme.colors.onSurface,
+        modifier = modifier
+            .offset(0.dp, (-4).dp)
+            .semantics {
+                contentDescription = "Privacy policy"
+                onClick(label = "open the document in the browser. ", action = null)
+            }
+            .clickable(enabled = clickable) { uriHandler.openUri("https://docs.google.com/document/d/1K-fJOo8rp4NferJA0X9VbhBavpIp9-PNQLP83_DJSdU/edit?usp=sharing") }
+    )
+}
+
 
 @Composable
 fun MainMenu(
@@ -294,165 +427,152 @@ fun MainMenu(
         ticViewModel.setMenuSettings(SAVE) // disabling IF condition to load settings only once, when menu is shown
     }
 
-    Column(
-        modifier = Modifier
-            .padding(25.dp)
-            .widthIn(160.dp, 240.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    Card(
+        modifier = Modifier.widthIn(220.dp, 300.dp),
+        shape = RoundedCornerShape(30.dp),
+        elevation = 0.dp,
+        backgroundColor = MaterialTheme.colors.surface
     ) {
-        //-------------------- BOARD SIZE text & slider
-        Box(
-            contentAlignment = Alignment.Center
-            //modifier = Modifier.heightIn(10.dp, 40.dp)
-        ){
-            // invisible button for TalkBack users to get from Menu back to the Game
-            val interactionSource = MutableInteractionSource()
-            Text(
-                text = "Close menu",
-                fontSize = 30.nonScaledSp,
-                color = MaterialTheme.colors.invisible1,
-                modifier = Modifier
-                    .offset(0.dp, (-40).dp)
-                    .semantics {
-                        contentDescription = "Close menu button."
-                        onClick(label = "return to the game. ", action = null)
-                    }
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null
-                    ) {
-                        ticViewModel.cancelWinRowChangesDuringTheGame()
-                        ticViewModel.cancelWinOrLoseChangesDuringTheGame()
-                        ticViewModel.setMenuSettings(SAVE)
-                        ticViewModel.changeFirstMoveOnMenuShowing()
-                        ticViewModel.saveOrLoadCurrentMove(LOAD)
-                        ticViewModel.showMenu(false)
-                        ticViewModel.makeBotMove() // if Bot's turn
-                    }
-            )
-
-            Text(
-                text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}",
-                style = MaterialTheme.typography.h5,
-                fontSize = 24.nonScaledSp,
-                modifier = Modifier
-                    .clearAndSetSemantics { }
-                    .testTag("Board Size"),
-            )
-        }
-        Slider(
-            value = sizeSliderPosition,
-            onValueChange = {
-                sizeSliderPosition = it
-                ticViewModel.setFieldSize(it) },
-            valueRange = 3f..windowInfo().sliderUpperLimit,
-            steps = windowInfo().sliderUpperLimit.toInt() - 4,
-            onValueChangeFinished = {
-                if(winRowSliderPosition > sizeSliderPosition){
-                    winRowSliderPosition = sizeSliderPosition
-                    ticViewModel.setWinRow(winRowSliderPosition)
-                }
-                winRowSteps = if(sizeSliderPosition > 3){ sizeSliderPosition.toInt() - 4 } else 0
-                winRowUpperLimit = sizeSliderPosition
-                                    },
+        Column(
             modifier = Modifier
-                .width(220.dp)
-                .padding(top = 4.dp, bottom = 20.dp)
-                .semantics {
-                    contentDescription =
-                        "Board size: ${(sizeSliderPosition + 0.5).toInt()} by ${(sizeSliderPosition + 0.5).toInt()}"
-                },
-            colors = SliderDefaults.colors(
-                activeTrackColor = MaterialTheme.colors.primary,
-                activeTickColor = MaterialTheme.colors.primary,
-                inactiveTrackColor = MaterialTheme.colors.primaryVariant,
-                inactiveTickColor = MaterialTheme.colors.primaryVariant,
-            )
-        )
-        //-------------------- WIN ROW text
-        Box(
-            modifier = Modifier.heightIn(10.dp, 40.dp)   // TODO delete Box() since we don't use AutoResizeText anymore?
-        ){
-            Row(verticalAlignment = Alignment.CenterVertically){
+                .padding(25.dp)
+                .widthIn(160.dp, 240.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            //-------------------- BOARD SIZE text & slider
+            Box(
+                contentAlignment = Alignment.Center
+                //modifier = Modifier.heightIn(10.dp, 40.dp)
+            ) {
                 Text(
-                    text = "${(winRowSliderPosition + 0.5).toInt()} in a row ",
+                    text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}",
                     style = MaterialTheme.typography.h5,
                     fontSize = 24.nonScaledSp,
                     modifier = Modifier
                         .clearAndSetSemantics { }
-                        .testTag("Win Row"),
+                        .testTag("Board Size"),
                 )
-                Button(
-                    modifier = Modifier
-                        .padding(0.dp)
-                        .semantics {
-                            contentDescription =
-                                "${(winRowSliderPosition + 0.5).toInt()} in a row ${if (winNotLose) "wins" else "loses"}. "
-                            onClick(
-                                label = "make ${(winRowSliderPosition + 0.5).toInt()} in a row ${if (winNotLose) "lose" else "win"}",
-                                action = null
-                            )
-                        },
-                    onClick = { ticViewModel.changeWinOrLose() },
-                    enabled = true,
-                    shape = RoundedCornerShape(30.dp),
-                    border = null,
-                    elevation = null,
-                    contentPadding = PaddingValues(0.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0x00000000),
-                        disabledBackgroundColor = Color(0x00000000)
+            }
+            Slider(
+                value = sizeSliderPosition,
+                onValueChange = {
+                    sizeSliderPosition = it
+                    ticViewModel.setFieldSize(it)
+                },
+                valueRange = 3f..windowInfo().sliderUpperLimit,
+                steps = windowInfo().sliderUpperLimit.toInt() - 4,
+                onValueChangeFinished = {
+                    if (winRowSliderPosition > sizeSliderPosition) {
+                        winRowSliderPosition = sizeSliderPosition
+                        ticViewModel.setWinRow(winRowSliderPosition)
+                    }
+                    winRowSteps = if (sizeSliderPosition > 3) {
+                        sizeSliderPosition.toInt() - 4
+                    } else 0
+                    winRowUpperLimit = sizeSliderPosition
+                },
+                modifier = Modifier
+                    .width(220.dp)
+                    .padding(top = 4.dp, bottom = 20.dp)
+                    .semantics {
+                        contentDescription =
+                            "Board size: ${(sizeSliderPosition + 0.5).toInt()} by ${(sizeSliderPosition + 0.5).toInt()}"
+                    },
+                colors = SliderDefaults.colors(
+                    activeTrackColor = MaterialTheme.colors.primary,
+                    activeTickColor = MaterialTheme.colors.primary,
+                    inactiveTrackColor = MaterialTheme.colors.primaryVariant,
+                    inactiveTickColor = MaterialTheme.colors.primaryVariant,
+                )
+            )
+            //-------------------- WIN ROW text
+            Box(
+                modifier = Modifier.heightIn(
+                    10.dp,
+                    40.dp
+                )   // TODO delete Box() since we don't use AutoResizeText anymore?
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${(winRowSliderPosition + 0.5).toInt()} in a row ",
+                        style = MaterialTheme.typography.h5,
+                        fontSize = 24.nonScaledSp,
+                        modifier = Modifier
+                            .clearAndSetSemantics { }
+                            .testTag("Win Row"),
                     )
-                ) {
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
+                    Button(
                         modifier = Modifier
                             .padding(0.dp)
-                    ) {
-                        Text(
-                            text = if(winNotLose) "wins " else "loses",
-                            style = MaterialTheme.typography.h5,
-                            fontSize = 24.nonScaledSp,
-                            color = MaterialTheme.colors.primary,
-                            modifier = Modifier
-                                .clearAndSetSemantics { }
-                                .testTag("Win or lose")
+                            .semantics {
+                                contentDescription =
+                                    "${(winRowSliderPosition + 0.5).toInt()} in a row ${if (winNotLose) "wins" else "loses"}. "
+                                onClick(
+                                    label = "make ${(winRowSliderPosition + 0.5).toInt()} in a row ${if (winNotLose) "lose" else "win"}",
+                                    action = null
+                                )
+                            },
+                        onClick = { ticViewModel.changeWinOrLose() },
+                        enabled = true,
+                        shape = RoundedCornerShape(30.dp),
+                        border = null,
+                        elevation = null,
+                        contentPadding = PaddingValues(0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color(0x00000000),
+                            disabledBackgroundColor = Color(0x00000000)
                         )
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.CenterStart,
+                            modifier = Modifier
+                                .padding(0.dp)
+                        ) {
+                            Text(
+                                text = if (winNotLose) "wins " else "loses",
+                                style = MaterialTheme.typography.h5,
+                                fontSize = 24.nonScaledSp,
+                                color = MaterialTheme.colors.primary,
+                                modifier = Modifier
+                                    .clearAndSetSemantics { }
+                                    .testTag("Win or lose")
+                            )
+                        }
                     }
                 }
             }
-        }
-        //-------------------- WIN ROW sliders
-        Box(
-            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
-        ){
-            // background grey slider
-            Slider(
-                enabled = false,
-                value = 0f,
-                onValueChange = {},
-                //valueRange = 3f..8f,
-                //steps = 4,
-                modifier = Modifier
-                    .clearAndSetSemantics { }
-                    .width(220.dp),
-                colors = SliderDefaults.colors(
-                    disabledInactiveTickColor = Color.Transparent,
-                    disabledThumbColor = if(winRowUpperLimit == 3f) {
-                        MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled).compositeOver(MaterialTheme.colors.surface)
-                    } else Color.Transparent
-                )
-            )
-            // real winRow slider
-            if(winRowUpperLimit != 3f){
+            //-------------------- WIN ROW sliders
+            Box(
+                modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
+            ) {
+                // background grey slider
                 Slider(
-                    value = winRowSliderPosition,
-                    onValueChange = { winRowSliderPosition = it },
-                    valueRange = 3f..winRowUpperLimit,
-                    steps = winRowSteps,
-                    onValueChangeFinished = {
-                        /*
+                    enabled = false,
+                    value = 0f,
+                    onValueChange = {},
+                    //valueRange = 3f..8f,
+                    //steps = 4,
+                    modifier = Modifier
+                        .clearAndSetSemantics { }
+                        .width(220.dp),
+                    colors = SliderDefaults.colors(
+                        disabledInactiveTickColor = Color.Transparent,
+                        disabledThumbColor = if (winRowUpperLimit == 3f) {
+                            MaterialTheme.colors.onSurface.copy(alpha = ContentAlpha.disabled)
+                                .compositeOver(MaterialTheme.colors.surface)
+                        } else Color.Transparent
+                    )
+                )
+                // real winRow slider
+                if (winRowUpperLimit != 3f) {
+                    Slider(
+                        value = winRowSliderPosition,
+                        onValueChange = { winRowSliderPosition = it },
+                        valueRange = 3f..winRowUpperLimit,
+                        steps = winRowSteps,
+                        onValueChangeFinished = {
+                            /*
                          When winRowUpperLimit == 4f, steps = 0,
                          so we have to manually implement changes to be discrete.
 
@@ -460,149 +580,160 @@ fun MainMenu(
                             if(winRowUpperLimit == 4f){ winRowSliderPosition = if(winRowSliderPosition > 3.5) 4f else 3f }
                         ..because of accessibility users unable to swipe that slider with TalkBack
                         */
-                        if(winRowUpperLimit == 4f){
-                            winRowSliderPosition = if(winRow == 3){
-                                if(winRowSliderPosition > 3) 4f else 3f
-                            } else {
-                                if(winRowSliderPosition < 4) 3f else 4f
+                            if (winRowUpperLimit == 4f) {
+                                winRowSliderPosition = if (winRow == 3) {
+                                    if (winRowSliderPosition > 3) 4f else 3f
+                                } else {
+                                    if (winRowSliderPosition < 4) 3f else 4f
+                                }
                             }
+                            ticViewModel.setWinRow(winRowSliderPosition)
+                        },
+                        modifier = Modifier
+                            .width(((200 / (windowInfo().sliderUpperLimit - 3)) * (winRowSteps + 1) + 20).dp)
+                            .semantics {
+                                contentDescription =
+                                    "${(winRowSliderPosition + 0.5).toInt()} in a row ends the game"
+                            }
+                            .testTag("winRow Slider"),
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = MaterialTheme.colors.primary,
+                            activeTickColor = MaterialTheme.colors.primary,
+                            inactiveTrackColor = MaterialTheme.colors.primaryVariant,
+                            inactiveTickColor = MaterialTheme.colors.primaryVariant,
+                        )
+                    )
+                }
+            }
+
+            //---------------------BUTTONS: theme, AI, Start
+            Row(
+                modifier = Modifier.width(204.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                //-------------------- THEME button
+                val systemThemeIsDark = isSystemInDarkTheme()
+                val themeIconColor =
+                    if (theme != AppTheme.AUTO) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+                val themeIconBG =
+                    if (theme == AppTheme.AUTO) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+                Box {
+                    Button(
+                        onClick = { ticViewModel.changeTheme(systemThemeIsDark) },
+                        modifier = Modifier
+                            .offset((-5).dp, 0.dp)
+                            .size(44.dp)
+                            .padding(0.dp)
+                            .clearAndSetSemantics { },
+                        shape = CircleShape,
+                        elevation = null,
+                        contentPadding = PaddingValues(0.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = themeIconBG,
+                        )
+                    ) {
+                        val currentMode = when (theme) {
+                            AppTheme.DARK -> painterResource(R.drawable.dark_mode_48px)
+                            AppTheme.LIGHT -> painterResource(R.drawable.baseline_light_mode_24)
+                            AppTheme.AUTO -> if (systemThemeIsDark) painterResource(R.drawable.dark_mode_48px) else painterResource(
+                                R.drawable.light_mode_48px
+                            )
                         }
-                        ticViewModel.setWinRow(winRowSliderPosition)
-                    },
+                        Icon(
+                            currentMode,
+                            "UI theme",
+                            tint = themeIconColor,
+                        )
+                    }
+                    val lift by animateDpAsState(
+                        targetValue = if (theme == AppTheme.AUTO) (-30).dp else 0.dp,
+                        animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing),
+                        //finishedListener = {}
+                    )
+                    val alpha by animateFloatAsState(
+                        targetValue = if (theme == AppTheme.AUTO) 0f else 1f,
+                        animationSpec = tween(
+                            durationMillis = 700,
+                            delayMillis = 350,
+                            easing = LinearOutSlowInEasing
+                        )
+                    )
+                    Text(
+                        text = if (theme == AppTheme.AUTO) "AUTO" else " ",
+                        fontSize = 14.nonScaledSp,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colors.primary,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .offset((-5).dp, lift)
+                            .alpha(alpha)
+                    )
+                }
+
+                //-------------------- AI button
+                val aiIconColor =
+                    if (playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+                val aiIconBG =
+                    if (!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
+                Button(
+                    onClick = { ticViewModel.switchPlayingVsAiMode() },
                     modifier = Modifier
-                        .width(((200 / (windowInfo().sliderUpperLimit - 3)) * (winRowSteps + 1) + 20).dp)
+                        .offset((-3).dp, 0.dp)
+                        .size(44.dp)
                         .semantics {
                             contentDescription =
-                                "${(winRowSliderPosition + 0.5).toInt()} in a row ends the game"
+                                "Playing versus AI ${if (playingVsAI) "enabled" else "disabled"} ."
+                            onClick(
+                                label = "${if (playingVsAI) "disable" else "enable"} ",
+                                action = null
+                            )
                         }
-                        .testTag("winRow Slider"),
-                    colors = SliderDefaults.colors(
-                        activeTrackColor = MaterialTheme.colors.primary,
-                        activeTickColor = MaterialTheme.colors.primary,
-                        inactiveTrackColor = MaterialTheme.colors.primaryVariant,
-                        inactiveTickColor = MaterialTheme.colors.primaryVariant,
-                    )
-                )
-            }
-        }
-
-        //---------------------BUTTONS: theme, AI, Start
-        Row(
-            modifier = Modifier.width(204.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ){
-            //-------------------- THEME button
-            val systemThemeIsDark = isSystemInDarkTheme()
-            val themeIconColor = if(theme != AppTheme.AUTO) MaterialTheme.colors.surface else MaterialTheme.colors.primary
-            val themeIconBG = if(theme == AppTheme.AUTO) MaterialTheme.colors.surface else MaterialTheme.colors.primary
-            Box {
-                Button(
-                    onClick = { ticViewModel.changeTheme(systemThemeIsDark) },
-                    modifier = Modifier
-                        .offset((-5).dp, 0.dp)
-                        .size(44.dp)
-                        .padding(0.dp)
-                        .clearAndSetSemantics { },
+                        .padding(0.dp),
                     shape = CircleShape,
                     elevation = null,
                     contentPadding = PaddingValues(0.dp),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = themeIconBG,
+                        backgroundColor = aiIconBG,
                     )
                 ) {
-                    val currentMode = when(theme){
-                        AppTheme.DARK -> painterResource(R.drawable.dark_mode_48px)
-                        AppTheme.LIGHT -> painterResource(R.drawable.baseline_light_mode_24)
-                        AppTheme.AUTO -> if(systemThemeIsDark) painterResource(R.drawable.dark_mode_48px) else painterResource(R.drawable.light_mode_48px)
-                    }
                     Icon(
-                        currentMode,
-                        "UI theme",
-                        tint = themeIconColor,
+                        painterResource(R.drawable.smart_toy_48px),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .offset(0.dp, (-1).dp),
+                        tint = aiIconColor,
                     )
                 }
-                val lift by animateDpAsState(
-                    targetValue = if(theme == AppTheme.AUTO) (-30).dp else 0.dp,
-                    animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing),
-                    //finishedListener = {}
-                )
-                val alpha by animateFloatAsState(
-                    targetValue = if(theme == AppTheme.AUTO) 0f else 1f,
-                    animationSpec = tween(durationMillis = 700, delayMillis = 350, easing = LinearOutSlowInEasing)
-                )
-                Text(
-                    text = if(theme == AppTheme.AUTO) "AUTO" else " ",
-                    fontSize = 14.nonScaledSp,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colors.primary,
+                //-------------------- START button
+                Button(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .offset((-5).dp, lift)
-                        .alpha(alpha)
-                )
-            }
-
-            //-------------------- AI button
-            val aiIconColor = if(playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
-            val aiIconBG = if(!playingVsAI) MaterialTheme.colors.surface else MaterialTheme.colors.primary
-            Button(
-                onClick = { ticViewModel.switchPlayingVsAiMode() },
-                modifier = Modifier
-                    .offset((-3).dp, 0.dp)
-                    .size(44.dp)
-                    .semantics {
-                        contentDescription =
-                            "Playing versus AI ${if (playingVsAI) "enabled" else "disabled"} ."
-                        onClick(
-                            label = "${if (playingVsAI) "disable" else "enable"} ",
-                            action = null
-                        )
-                    }
-                    .padding(0.dp),
-                shape = CircleShape,
-                elevation = null,
-                contentPadding = PaddingValues(0.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = aiIconBG,
-                )
-            ) {
-                Icon(
-                    painterResource(R.drawable.smart_toy_48px),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .offset(0.dp, (-1).dp),
-                    tint = aiIconColor,
-                )
-            }
-            //-------------------- START button
-            Button(
-                modifier = Modifier
-                    .height(44.dp)
-                    .widthIn(80.dp, 140.dp)
-                    .semantics {
-                        contentDescription =
-                            "Start the game. ${if (firstMove == player1) "X" else "O"} ${if (playingVsAI) " is played by AI and" else ""} moves first. "
-                        onClick(label = "begin the game", action = null)
-                    },
-                elevation = null,
-                contentPadding = PaddingValues(0.dp),
-                shape = RoundedCornerShape(15.dp),
-                onClick = {
-                    ticViewModel.resetGame(size)
-                    ticViewModel.allowChangingFirstMove(true)
-                    ticViewModel.setMenuSettings(SAVE)
-                    ticViewModel.showMenu(false)
-                    ticViewModel.makeBotMove()
-                }) {
-                Text(
-                    text = "START",
-                    modifier = Modifier
-                        .clearAndSetSemantics {  },
-                    style = MaterialTheme.typography.button,
-                    fontSize = 20.nonScaledSp,
+                        .height(44.dp)
+                        .widthIn(80.dp, 140.dp)
+                        .semantics {
+                            contentDescription =
+                                "Start the game. ${if (firstMove == player1) "X" else "O"} ${if (playingVsAI) " is played by AI and" else ""} moves first. "
+                            onClick(label = "begin the game", action = null)
+                        },
+                    elevation = null,
+                    contentPadding = PaddingValues(0.dp),
+                    shape = RoundedCornerShape(15.dp),
+                    onClick = {
+                        ticViewModel.resetGame(size)
+                        ticViewModel.allowChangingFirstMove(true)
+                        ticViewModel.setMenuSettings(SAVE)
+                        ticViewModel.showMenu(false)
+                        ticViewModel.makeBotMove()
+                    }) {
+                    Text(
+                        text = "START",
+                        modifier = Modifier
+                            .clearAndSetSemantics { },
+                        style = MaterialTheme.typography.button,
+                        fontSize = 20.nonScaledSp,
                     )
+                }
             }
         }
     }
@@ -1141,6 +1272,18 @@ fun AutoResizedText(
         )
     }
 }
+
+
+fun Modifier.vertical() =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(placeable.height, placeable.width) {
+            placeable.place(
+                x = -(placeable.width / 2 - placeable.height / 2),
+                y = -(placeable.height / 2 - placeable.width / 2)
+            )
+        }
+    }
 
 
 /*
