@@ -99,8 +99,8 @@ fun TicApp(
                         .testTag("Cancel Button"),
                     cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
                     cancelMove = {
-                        ticViewModel.cancelMove()
                         ticViewModel.cancelBotWait()
+                        ticViewModel.cancelMove()
                                  },
                     playingVsAI = ticUiState.playingVsAI,
                     currentMove = ticUiState.currentMove,
@@ -202,7 +202,10 @@ fun TicApp(
                         .fillMaxWidth()
                         .testTag("Cancel Button"),
                     cancelMoveButtonEnabled = ticUiState.cancelMoveButtonEnabled,
-                    cancelMove = {ticViewModel.cancelMove()},
+                    cancelMove = {
+                        ticViewModel.cancelBotWait()
+                        ticViewModel.cancelMove()
+                    },
                     playingVsAI = ticUiState.playingVsAI,
                     currentMove = ticUiState.currentMove,
                     gameArray = ticUiState.gameArray,
@@ -270,7 +273,7 @@ fun MenuWindow(
     var menuVisibility by remember { mutableStateOf(false) }
     if(menuIsVisible) {menuVisibility = true}
     val lift by animateDpAsState(
-        targetValue = if(menuIsVisible) 0.dp else 10.dp,
+        targetValue = if(menuIsVisible) 0.dp else (-10).dp,
         animationSpec = tween(durationMillis = 300, easing = LinearOutSlowInEasing),
     )
     val menuAlpha by animateFloatAsState(
@@ -388,7 +391,7 @@ fun PolicyText(
 ){
     val uriHandler = LocalUriHandler.current
     Text(
-        text = "v 1.0  /  Privacy policy",
+        text = "v 1.01  /  Privacy policy",
         fontSize = 14.nonScaledSp,
         color = MaterialTheme.colors.onSurface,
         modifier = modifier
