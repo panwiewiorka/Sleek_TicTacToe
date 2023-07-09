@@ -391,9 +391,9 @@ fun PolicyText(
 ){
     val uriHandler = LocalUriHandler.current
     Text(
-        text = "v 1.01  /  Privacy policy",
+        text = "v 1.02  /  Privacy policy",
         fontSize = 14.nonScaledSp,
-        color = MaterialTheme.colors.onSurface,
+        color = MaterialTheme.colors.standart,
         modifier = modifier
             .offset(0.dp, (-4).dp)
             .semantics {
@@ -451,6 +451,7 @@ fun MainMenu(
                 Text(
                     text = "Board size: ${(sizeSliderPosition + 0.5).toInt()}",
                     style = MaterialTheme.typography.h5,
+                    color = MaterialTheme.colors.standart,
                     fontSize = 24.nonScaledSp,
                     modifier = Modifier
                         .clearAndSetSemantics { }
@@ -504,7 +505,8 @@ fun MainMenu(
                         modifier = Modifier
                             .clearAndSetSemantics { }
                             .testTag("Win Row"),
-                    )
+                        color = MaterialTheme.colors.standart,
+                        )
                     Button(
                         modifier = Modifier
                             .padding(0.dp)
@@ -1035,6 +1037,7 @@ fun MenuButton(
                         .testTag("winRow square")
                         .clearAndSetSemantics { }
                         .offset(0.dp, (-0.5).dp),
+                    color = MaterialTheme.colors.standart,
                     autoResizeHeightOrWidth = HEIGHT
                 )
             }
@@ -1097,7 +1100,7 @@ fun GameField(
                                 )
                                 .size(fieldSize / gameArray.size)
                                 .border(
-                                    width = 1.dp,
+                                    width = 0.5.dp,
                                     color = MaterialTheme.colors.background,
                                     shape = RoundedCornerShape(0.dp)
                                 )

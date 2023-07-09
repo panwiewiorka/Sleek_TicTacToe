@@ -29,7 +29,6 @@ fun windowInfo(): WindowInfo {
         },
         screenWidth = configuration.screenWidthDp.dp,
         screenHeight = configuration.screenHeightDp.dp,
-        //sliderUpperLimit = if(lowestDimension > 400.dp) { ((lowestDimension.value.toInt() / 100) + 5).toFloat() } else 8f,
         sliderUpperLimit = if(lowestDimension > 400.dp) { (lowestDimension.value.toInt() / 50).toFloat() } else 8f,
     )
 }

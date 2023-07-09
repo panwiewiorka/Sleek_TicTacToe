@@ -16,6 +16,10 @@ val SliderLight = Color(0xFFFF4848)
 val SliderBgLight = Color(0xFFFFB7B7)
 val BackgroundLight = Color(0xFFCCCCCC)
 
+val Colors.standart: Color
+    @Composable
+    get() = if (isLight) Color(0xFF000000) else Color(0xFFFFFFFF)
+
 val Colors.current: Color
     @Composable
     get() = if (isLight) Color(0xFF396F9E) else Color(0xFFFFFF88)

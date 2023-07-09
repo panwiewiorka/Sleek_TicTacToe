@@ -33,7 +33,7 @@ enum class CellColors {
         @Composable
         //@ReadOnlyComposable
         get() = when(this) {
-            STANDART_COLOR -> MaterialTheme.colors.onSecondary
+            STANDART_COLOR -> MaterialTheme.colors.standart
             CURRENT_COLOR -> MaterialTheme.colors.current
             WIN_COLOR -> MaterialTheme.colors.win
             LOSE_COLOR -> MaterialTheme.colors.lose

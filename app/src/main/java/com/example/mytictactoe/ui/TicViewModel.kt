@@ -104,6 +104,7 @@ class TicViewModel(
                     fieldSize = uiState.value.fieldSize.value.toInt(),
                     arraySize = uiState.value.gameArray.size,
                     winRow = uiState.value.winRow,
+//                    winRow = if(uiState.value.winRow > uiState.value.gameArray.size) uiState.value.gameArray.size else uiState.value.winRow,
                     savedWinRow = uiState.value.savedWinRow,
                     winNotLose = uiState.value.winNotLose,
                     savedWinNotLose = uiState.value.savedWinNotLose,
