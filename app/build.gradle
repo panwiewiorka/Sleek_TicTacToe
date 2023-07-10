@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace 'com.example.mytictactoe'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "app.sleek_tictactoe"
         minSdk 26
-        targetSdk 33
-        versionCode 3
-        versionName "1.02"
+        targetSdk 34
+        versionCode 4
+        versionName "1.03"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -28,11 +28,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
     }
     buildFeatures {
         compose true
@@ -51,7 +51,7 @@ dependencies {
 
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
-    implementation 'androidx.activity:activity-compose:1.7.1'
+    implementation 'androidx.activity:activity-compose:1.7.2'
     implementation "androidx.compose.ui:ui:1.4.3"
     implementation "androidx.compose.ui:ui-tooling-preview:1.4.3"
     implementation 'androidx.compose.material:material:1.4.3'
@@ -70,9 +70,9 @@ dependencies {
     implementation "androidx.savedstate:savedstate-ktx:1.2.1"
 
     // Room
-    implementation "androidx.room:room-runtime:2.5.1"
-    kapt "androidx.room:room-compiler:2.5.1"
-    implementation "androidx.room:room-ktx:2.5.1"
+    implementation "androidx.room:room-runtime:2.5.2"
+    kapt "androidx.room:room-compiler:2.5.2"
+    implementation "androidx.room:room-ktx:2.5.2"
 
 //    androidTestImplementation "androidx.test:runner:$androidXTestVersion"
 //    androidTestImplementation "androidx.test:rules:$androidXTestVersion"
