@@ -99,7 +99,7 @@ class TicViewModel(
                 SettingsTable(
                     id = 1,
                     theme = uiState.value.theme,
-                    memorySettings = uiState.value.memorySettings,
+                    memorySettings = LOAD,
                     menuIsVisible = uiState.value.menuIsVisible,
                     fieldSize = uiState.value.fieldSize.value.toInt(),
                     arraySize = uiState.value.gameArray.size,
