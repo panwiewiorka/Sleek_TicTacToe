@@ -3,17 +3,19 @@ package com.example.mytictactoe
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.espresso.Espresso.pressBack
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.mytictactoe.data.SettingsDatabase
 import com.example.mytictactoe.ui.TicApp
+import com.example.mytictactoe.ui.TicViewModel
 import com.example.mytictactoe.ui.theme.MyTicTacToeTheme
-
-import org.junit.Test
-import org.junit.runner.RunWith
-
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -37,8 +39,26 @@ class TicUiTests {
 
     @Before
     fun setAppContent() {
+        val db by lazy{
+            Room.databaseBuilder(
+                getApplicationContext(),
+                SettingsDatabase::class.java,
+                name = "settings.db"
+            ).build()
+        }
+//        val viewModel by viewModels<TicViewModel>(
+//            factoryProducer = {
+//                object: ViewModelProvider.Factory {
+//                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//                        return TicViewModel(
+//                            db.dao
+//                        ) as T
+//                    }
+//                }
+//            }
+//        )
         composeTestRule.setContent {
-            MyTicTacToeTheme { TicApp() }
+            MyTicTacToeTheme(ticViewModel = TicViewModel(db.dao)) { TicApp(TicViewModel(db.dao)) }
         }
     }
 
@@ -54,10 +74,10 @@ class TicUiTests {
     fun setSizeSliderTo4_ChangesBoardSizeTextTo4_andMakeWinRowSliderEnable() {
         //verifyMenuIsVisible()
         composeTestRule.onNodeWithTag("winRow Slider").assertDoesNotExist()
-        composeTestRule.onNodeWithContentDescription("Board size: 3").performTouchInput {
+        composeTestRule.onNodeWithContentDescription("Board size: 3 by 3").performTouchInput {
             swipe(start = Offset(0f, 0f) , end = Offset(150f, 0f))
         }
-        composeTestRule.onNodeWithTag("Board Size").assertTextEquals("Board size: 4")
+        composeTestRule.onNodeWithTag("Board Size", false).assertTextEquals("Board size: 4") // doesn't work because of clearAndSetSemantics{}
         composeTestRule.onNodeWithTag("winRow Slider").assertExists("No winRow Slider is visible")
     }
 
