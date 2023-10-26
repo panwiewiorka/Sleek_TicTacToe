@@ -13,3 +13,4 @@ Yet another TicTacToe (aka N in a row) game, but with:
 - Light / Dark theme
 - Easter egg (changing X O symbols to others)
 
+[Get on Google Play](https://play.google.com/store/apps/details?id=app.sleek_tictactoe)
