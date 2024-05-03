@@ -1,6 +1,5 @@
 # Sleek TicTacToe
 
-Yet another TicTacToe (aka N in a row) game, but with:
 - Straight to the point interface and lightweight look
 - Autosave of all settings, including current game progress
 - Basic AI to play against (additionally to 2 players mode)
